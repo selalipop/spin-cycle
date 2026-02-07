@@ -79,6 +79,15 @@ export default defineSchema({
   // GAMES — one row per game session
   // ===========================================================================
   games: defineTable({
+    /**
+     * Public UUID used in browser URLs, e.g. /game/:gameId/host.
+     * Keep this separate from Convex document IDs.
+     */
+    public_id: v.string(),
+
+    /** 4-6 character uppercase code players type on their phone. */
+    join_code: v.string(),
+
     /** The seed event, e.g. "A sinkhole opens in the financial district..." */
     event: v.string(),
 
@@ -113,7 +122,9 @@ export default defineSchema({
      * Place a Story (2), Anonymous Leak (3)
      */
     shared_actions: v.array(actionType),
-  }),
+  })
+    .index("by_join_code", ["join_code"])
+    .index("by_public_id", ["public_id"]),
 
   // ===========================================================================
   // FACTIONS — always exactly 4 per game
@@ -125,7 +136,11 @@ export default defineSchema({
   // ===========================================================================
   factions: defineTable({
     game_id: v.id("games"),
+    /** Stable string key for clients, e.g. "the_institute". */
+    code: v.string(),
     name: v.string(),
+    /** One-line player-facing summary for faction selection UI. */
+    description: v.string(),
 
     /**
      * Full personality description used in AI prompts.
@@ -162,7 +177,9 @@ export default defineSchema({
      * [2] special at 4 credits (is_special = true)
      */
     faction_actions: v.array(actionType),
-  }).index("by_game", ["game_id"]),
+  })
+    .index("by_game", ["game_id"])
+    .index("by_game_and_code", ["game_id", "code"]),
 
   // ===========================================================================
   // PLAYERS — individual humans on phones
@@ -170,7 +187,11 @@ export default defineSchema({
   players: defineTable({
     game_id: v.id("games"),
     faction_id: v.id("factions"),
+    /** Public UUID used in browser URLs, e.g. /game/:gameId/player/:playerId. */
+    public_id: v.string(),
     name: v.string(),
+    /** Emoji chosen in join flow. */
+    avatar: v.string(),
 
     /**
      * Random ID from the browser. No login needed, Jackbox-style.
@@ -180,7 +201,9 @@ export default defineSchema({
   })
     .index("by_game", ["game_id"])
     .index("by_faction", ["faction_id"])
-    .index("by_session", ["session_id"]),
+    .index("by_session", ["session_id"])
+    .index("by_public_id", ["public_id"])
+    .index("by_game_and_session", ["game_id", "session_id"]),
 
   // ===========================================================================
   // ROUNDS — one row per round per game
@@ -218,6 +241,24 @@ export default defineSchema({
       v.object({
         quality: v.array(v.id("factions")),
         highest_impact: v.optional(v.id("factions")),
+      }),
+    ),
+
+     /**
+     * Per-faction briefing and goal for this round.
+     * AI-generated based on faction archetype + current game state.
+     *
+     * - goal: one sentence, always visible. The CTA.
+     *   e.g. "Make the public believe the bridge is mundane engineering"
+     * - briefing: 3-5 sentences in the faction's voice. Flavorful,
+     *   reveals their selfish motivations, gives strategic context.
+     *   Expandable on the phone UI, optional reading.
+     */
+     faction_briefs: v.record(
+      v.id("factions"),
+      v.object({
+        goal: v.string(),
+        briefing: v.string(),
       }),
     ),
   }).index("by_game_and_number", ["game_id", "number"]),

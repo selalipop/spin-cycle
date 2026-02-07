@@ -1,120 +1,98 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Button, Card, Chip, Input } from '@heroui/react'
+import { createFileRoute } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
-import { useSuspenseQuery } from '@tanstack/react-query'
-import { convexQuery } from '@convex-dev/react-query'
 import { api } from '../../convex/_generated/api'
+import { PageShell } from '~/components/lobby/page-shell'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
 
 function Home() {
-  const {
-    data: { viewer, numbers },
-  } = useSuspenseQuery(convexQuery(api.myFunctions.listNumbers, { count: 10 }))
+  const createGame = useMutation(api.lobby.createGame)
 
-  const addNumber = useMutation(api.myFunctions.addNumber)
+  const [joinCode, setJoinCode] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const normalizedJoinCode = joinCode.trim().toUpperCase()
+
+  const handleCreate = async () => {
+    setError(null)
+    setIsCreating(true)
+
+    try {
+      const game = await createGame({})
+      window.location.assign(`/game/${game.gameId}/host`)
+    } catch {
+      setError('Could not create game right now. Please try again.')
+      setIsCreating(false)
+    }
+  }
+
+  const handleJoin = () => {
+    if (!normalizedJoinCode) {
+      setError('Enter a game code to join.')
+      return
+    }
+
+    setError(null)
+    setIsJoining(true)
+    window.location.assign(`/join/${normalizedJoinCode}`)
+  }
 
   return (
-    <main className="p-8 flex flex-col gap-16">
-      <h1 className="text-4xl font-bold text-center">
-        Convex + Tanstack Start
-      </h1>
-      <div className="flex flex-col gap-8 max-w-lg mx-auto">
-        <p>Welcome {viewer ?? 'Anonymous'}!</p>
-        <p>
-          Click the button below and open this page in another window - this
-          data is persisted in the Convex cloud database!
-        </p>
-        <p>
-          <button
-            className="bg-dark dark:bg-light text-light dark:text-dark text-sm px-4 py-2 rounded-md border-2"
-            onClick={() => {
-              void addNumber({ value: Math.floor(Math.random() * 10) })
-            }}
-          >
-            Add a random number
-          </button>
-        </p>
-        <p>
-          Numbers:{' '}
-          {numbers.length === 0 ? 'Click the button!' : numbers.join(', ')}
-        </p>
-        <p>
-          Edit{' '}
-          <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-            convex/myFunctions.ts
-          </code>{' '}
-          to change your backend
-        </p>
-        <p>
-          Edit{' '}
-          <code className="text-sm font-bold font-mono bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded-md">
-            src/routes/index.tsx
-          </code>{' '}
-          to change your frontend
-        </p>
-        <p>
-          Open{' '}
-          <Link
-            to="/anotherPage"
-            className="text-blue-600 underline hover:no-underline"
-          >
-            another page
-          </Link>{' '}
-          to send an action.
-        </p>
-        <div className="flex flex-col">
-          <p className="text-lg font-bold">Useful resources:</p>
-          <div className="flex gap-2">
-            <div className="flex flex-col gap-2 w-1/2">
-              <ResourceCard
-                title="Convex docs"
-                description="Read comprehensive documentation for all Convex features."
-                href="https://docs.convex.dev/home"
-              />
-              <ResourceCard
-                title="Stack articles"
-                description="Learn about best practices, use cases, and more from a growing
-            collection of articles, videos, and walkthroughs."
-                href="https://www.typescriptlang.org/docs/handbook/2/basic-types.html"
-              />
-            </div>
-            <div className="flex flex-col gap-2 w-1/2">
-              <ResourceCard
-                title="Templates"
-                description="Browse our collection of templates to get started quickly."
-                href="https://www.convex.dev/templates"
-              />
-              <ResourceCard
-                title="Discord"
-                description="Join our developer community to ask questions, trade tips & tricks,
-            and show off your projects."
-                href="https://www.convex.dev/community"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  )
-}
+    <PageShell
+      eyebrow="Newsroom"
+      subtitle="Four factions. One breaking story. Total narrative warfare."
+      title="Run the room, bend the headlines"
+    >
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Card className="border border-zinc-700/70 bg-zinc-900/70">
+          <Card.Header>
+            <Card.Title>Host a Game</Card.Title>
+            <Card.Description>Create a new lobby and bring teams in.</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <p className="text-sm text-zinc-300">
+              Start a fresh match with all 4 factions, default actions, and neutral sentiment.
+            </p>
+            <Button className="w-full" isDisabled={isCreating || isJoining} onPress={handleCreate}>
+              {isCreating ? 'Creating...' : 'Create Game'}
+            </Button>
+          </Card.Content>
+        </Card>
 
-function ResourceCard({
-  title,
-  description,
-  href,
-}: {
-  title: string
-  description: string
-  href: string
-}) {
-  return (
-    <div className="flex flex-col gap-2 bg-slate-200 dark:bg-slate-800 p-4 rounded-md h-28 overflow-auto">
-      <a href={href} className="text-sm underline hover:no-underline">
-        {title}
-      </a>
-      <p className="text-xs">{description}</p>
-    </div>
+        <Card className="border border-zinc-700/70 bg-zinc-900/70">
+          <Card.Header>
+            <Card.Title>Join a Game</Card.Title>
+            <Card.Description>Enter the short host code.</Card.Description>
+          </Card.Header>
+          <Card.Content className="space-y-4">
+            <Input
+              aria-label="Join code"
+              className="uppercase"
+              maxLength={6}
+              onChange={(event) => {
+                setJoinCode(event.currentTarget.value.toUpperCase())
+              }}
+              placeholder="ABCD"
+              value={joinCode}
+            />
+            <Button className="w-full" isDisabled={!normalizedJoinCode || isCreating || isJoining} onPress={handleJoin}>
+              Join Game
+            </Button>
+          </Card.Content>
+        </Card>
+      </section>
+
+      {error ? (
+        <Chip className="w-fit bg-rose-600/25 text-rose-200">
+          {error}
+        </Chip>
+      ) : null}
+    </PageShell>
   )
 }

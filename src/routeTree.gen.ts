@@ -9,55 +9,82 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AnotherPageRouteImport } from './routes/anotherPage'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JoinJoinCodeRouteImport } from './routes/join/$joinCode'
+import { Route as GameGameIdHostRouteImport } from './routes/game/$gameId/host'
+import { Route as GameGameIdPlayerPlayerIdRouteImport } from './routes/game/$gameId/player/$playerId'
 
-const AnotherPageRoute = AnotherPageRouteImport.update({
-  id: '/anotherPage',
-  path: '/anotherPage',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JoinJoinCodeRoute = JoinJoinCodeRouteImport.update({
+  id: '/join/$joinCode',
+  path: '/join/$joinCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GameGameIdHostRoute = GameGameIdHostRouteImport.update({
+  id: '/game/$gameId/host',
+  path: '/game/$gameId/host',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GameGameIdPlayerPlayerIdRoute =
+  GameGameIdPlayerPlayerIdRouteImport.update({
+    id: '/game/$gameId/player/$playerId',
+    path: '/game/$gameId/player/$playerId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/anotherPage': typeof AnotherPageRoute
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+  '/game/$gameId/host': typeof GameGameIdHostRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/anotherPage': typeof AnotherPageRoute
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+  '/game/$gameId/host': typeof GameGameIdHostRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/anotherPage': typeof AnotherPageRoute
+  '/join/$joinCode': typeof JoinJoinCodeRoute
+  '/game/$gameId/host': typeof GameGameIdHostRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/anotherPage'
+  fullPaths:
+    | '/'
+    | '/join/$joinCode'
+    | '/game/$gameId/host'
+    | '/game/$gameId/player/$playerId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/anotherPage'
-  id: '__root__' | '/' | '/anotherPage'
+  to:
+    | '/'
+    | '/join/$joinCode'
+    | '/game/$gameId/host'
+    | '/game/$gameId/player/$playerId'
+  id:
+    | '__root__'
+    | '/'
+    | '/join/$joinCode'
+    | '/game/$gameId/host'
+    | '/game/$gameId/player/$playerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AnotherPageRoute: typeof AnotherPageRoute
+  JoinJoinCodeRoute: typeof JoinJoinCodeRoute
+  GameGameIdHostRoute: typeof GameGameIdHostRoute
+  GameGameIdPlayerPlayerIdRoute: typeof GameGameIdPlayerPlayerIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/anotherPage': {
-      id: '/anotherPage'
-      path: '/anotherPage'
-      fullPath: '/anotherPage'
-      preLoaderRoute: typeof AnotherPageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -65,12 +92,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/join/$joinCode': {
+      id: '/join/$joinCode'
+      path: '/join/$joinCode'
+      fullPath: '/join/$joinCode'
+      preLoaderRoute: typeof JoinJoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game/$gameId/host': {
+      id: '/game/$gameId/host'
+      path: '/game/$gameId/host'
+      fullPath: '/game/$gameId/host'
+      preLoaderRoute: typeof GameGameIdHostRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/game/$gameId/player/$playerId': {
+      id: '/game/$gameId/player/$playerId'
+      path: '/game/$gameId/player/$playerId'
+      fullPath: '/game/$gameId/player/$playerId'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AnotherPageRoute: AnotherPageRoute,
+  JoinJoinCodeRoute: JoinJoinCodeRoute,
+  GameGameIdHostRoute: GameGameIdHostRoute,
+  GameGameIdPlayerPlayerIdRoute: GameGameIdPlayerPlayerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
