@@ -993,7 +993,7 @@ export const generatePlanningBriefings = action({
           chatGenerationParams: {
             model: openRouterModel,
             stream: false,
-            temperature: 0.6,
+            temperature: 1,
             messages: [
               {
                 role: 'system',
@@ -1018,11 +1018,15 @@ export const generatePlanningBriefings = action({
                   additionalProperties: false,
                   required: ['goal', 'briefing'],
                   properties: {
+                    concrete_strategy: {
+                      type: 'string',
+                       description: '2-3 paragraphs of internal monologue where you pause the faction roleplay and actually think about the current sentiments and how to in-universe push them towards where the player likely wants them to be.'
+                    },
                     briefing: {
                       type: 'string'
                       , description: 'The briefing is an in-world message from faction leadership to the team.'
                     },
-                    goal: { type: 'string' },
+                    goal: { type: 'string', description: 'The goal is a mission assignment. It lands on a player\'s phone screen and needs to immediately orient them. After reading it, the player should think "I know exactly what I\'d write for a social media post or an interview or a leak about this." Unlike the briefing, this is a bit more grounded' },
                   },
                 },
               },

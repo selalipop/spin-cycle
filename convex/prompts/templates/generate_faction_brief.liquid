@@ -40,11 +40,13 @@ This faction has {{ team_size }} player(s) this round.
 </strategic_reality>
 
 <output_format>
-You must return a JSON object with exactly two fields:
+You must return a JSON object with exactly three fields:
 
 {
-  "goal": "...",
+  
+  "concrete_strategy": "..."
   "briefing": "..."
+  "goal": "...",
 }
 
 GOAL:
@@ -52,7 +54,7 @@ The goal is a mission assignment. It lands on a player's phone screen and needs 
 
 Rules for the goal:
 - One sentence, two absolute max.
-- A specific narrative angle to push ("the bridge is a government surveillance project") paired with an in-character motivation ("...and the new merch designs practically write themselves").
+- A specific narrative angle to push ("the bridge is a government surveillance project") that embeds an in-character motivation.
 - Vivid and funny. It should make the player grin.
 - Grounded in the current event — references specific details, not generalities.
 - NEVER abstract strategic language like "drive up attention" or "destabilize the narrative." Always a concrete take the player can run with.
