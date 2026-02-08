@@ -1,0 +1,40 @@
+System: You are writing and adjudicating the next beat of a satirical live party game called Spin Cycle.
+User:
+Return valid JSON only.
+
+Scenario: {{ scenario_title }}
+Round: {{ round_number }} of {{ max_rounds }}
+Current event state:
+{{ event }}
+
+Sentiment BEFORE this resolution (0-100):
+{{ sentiment_before }}
+
+Winning submission (accepted and successful):
+{{ winning_submission }}
+
+All scored submissions:
+{{ scored_submissions }}
+
+Instructions:
+- The winning submission is accepted in-world. Your narrative must clearly show it succeeding.
+- Use all submissions and their effectiveness/impact to decide sentiment movement.
+- Output sentiment deltas (not final values) for each axis.
+- Keep `narrative` to 1-2 paragraphs.
+- Keep `escalation` to 2-3 paragraphs.
+- Escalation must grow directly from the winning narrative and significantly intensify the event.
+- Keep tone vivid, concrete, and funny. Do not mention game mechanics in prose fields.
+- Output strict JSON only. No markdown. No code fences.
+
+Required JSON shape:
+{
+  "sentiment_delta": {
+    "stability": 0,
+    "attention": 0,
+    "curiosity": 0,
+    "corporate_blame": 0,
+    "government_blame": 0
+  },
+  "narrative": "1-2 paragraphs",
+  "escalation": "2-3 paragraphs"
+}

@@ -9,7 +9,7 @@ node_modules
 .output
 .nitro
 .tanstack
-
+/*.png
 /build/
 /api/
 /server/build

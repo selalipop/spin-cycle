@@ -138,7 +138,7 @@
   }
 
   .neo-label {
-    @apply font-mono text-[0.68rem] font-semibold tracking-[0.18em] uppercase text-muted-foreground;
+    @apply font-mono text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground;
   }
 
   .neo-display {

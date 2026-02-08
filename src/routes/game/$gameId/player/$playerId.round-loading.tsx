@@ -33,11 +33,10 @@ function PlayerRoundLoadingPhaseRoute() {
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
-      subtitle="Your faction briefing is almost ready."
       title="Briefings Incoming"
     >
       <PhaseHoldingScreen
-        description="Keep this page open. Your move menu unlocks automatically once briefings are complete."
+        description="Hang tight — moves unlock soon."
         label="Briefings Incoming"
         title="Setting Up Your Round"
       />

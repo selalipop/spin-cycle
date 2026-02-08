@@ -33,12 +33,12 @@ function PlayerIntermissionPhaseRoute() {
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
-      subtitle="The next player phase is not available on phones yet."
+      subtitle="Waiting for the next round."
       title="Intermission"
     >
       <Card className="neo-panel py-0">
         <CardContent className="space-y-3 px-6 py-6">
-          <p className="text-sm text-black/90">Stay ready. The host will move the game forward.</p>
+          <p className="text-base text-black/90">The host will kick off what's next.</p>
         </CardContent>
       </Card>
     </PageShell>

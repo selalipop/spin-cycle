@@ -1,5 +1,5 @@
 import { Badge } from '~/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { cn } from '~/lib/utils'
 
 export type ActionOption = {
@@ -42,18 +42,18 @@ function ActionRow({
     >
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-heading text-sm leading-tight text-black sm:text-base">{action.name}</p>
-          <Badge className="rounded-full border border-black bg-white px-2 py-0.5 text-[0.62rem] uppercase text-black">
+          <p className="font-heading text-base leading-tight text-black">{action.name}</p>
+          <Badge className="rounded-full border border-black bg-white px-2 py-0.5 text-xs uppercase text-black">
             {action.isShared ? 'Shared' : 'Faction'}
           </Badge>
         </div>
-        <p className="text-sm text-black/90">{action.prompt}</p>
-        <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/78">{statusLabel}</p>
+        <p className="text-base text-black/90">{action.prompt}</p>
+        <p className="font-mono text-xs uppercase tracking-[0.08em] text-black/78">{statusLabel}</p>
       </div>
 
       <Badge
         className={cn(
-          'shrink-0 rounded-full border border-black px-2 py-1 text-[0.66rem] uppercase',
+          'shrink-0 rounded-full border border-black px-2 py-1 text-xs uppercase',
           isDisabled ? 'bg-black/10 text-black/78' : 'bg-primary text-primary-foreground',
         )}
       >
@@ -78,9 +78,6 @@ export function ActionMenu({
     <Card className="neo-panel gap-5 py-4">
       <CardHeader className="gap-3 pb-0">
         <CardTitle className="font-display text-2xl text-black sm:text-3xl">Pick a Move</CardTitle>
-        <CardDescription className="text-black/90">
-          Shared moves are available to everyone. Faction moves are your team exclusives.
-        </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-5 pb-2">

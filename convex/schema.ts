@@ -270,6 +270,12 @@ export default defineSchema({
     narrative: v.optional(v.string()),
 
     /**
+     * A larger second-wave consequence that escalates the event after
+     * the winning narrative lands.
+     */
+    escalation: v.optional(v.string()),
+
+    /**
      * Who earned bonus credits this round. Null until processing completes.
      * - quality: factions that had at least one action score effectiveness >= 7
      * - highest_impact: the single faction with highest impact

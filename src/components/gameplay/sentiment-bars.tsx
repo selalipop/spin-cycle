@@ -52,7 +52,7 @@ export function SentimentBars({
     <Card className="neo-panel gap-5 py-4">
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-0">
         <CardTitle className="font-display text-2xl text-black sm:text-3xl">{title}</CardTitle>
-        <Badge className="rounded-full border border-black bg-white px-2.5 py-1 text-[0.65rem] uppercase text-black">
+        <Badge className="rounded-full border border-black bg-white px-2.5 py-1 text-xs uppercase text-black">
           Scale: 0 to 100
         </Badge>
       </CardHeader>
@@ -64,10 +64,10 @@ export function SentimentBars({
           return (
             <div className="space-y-2" key={item.key}>
               <div className="flex items-center justify-between gap-2">
-                <p className="font-heading text-sm uppercase tracking-[0.06em] text-black sm:text-base">
+                <p className="font-heading text-base uppercase tracking-[0.06em] text-black">
                   {item.label}
                 </p>
-                <Badge className="rounded-full border border-black bg-white px-2 py-0.5 font-mono text-[0.68rem] text-black">
+                <Badge className="rounded-full border border-black bg-white px-2 py-0.5 font-mono text-xs text-black">
                   {Math.round(value)}
                 </Badge>
               </div>

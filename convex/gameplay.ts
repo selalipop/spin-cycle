@@ -16,6 +16,8 @@ import {
 import {
   GENERATE_FACTION_BRIEF_SYSTEM,
   GENERATE_FACTION_BRIEF_USER,
+  RESOLVE_ROUND_OUTCOME_SYSTEM,
+  RESOLVE_ROUND_OUTCOME_USER,
   SCORE_SUBMITTED_ACTION_SYSTEM,
   SCORE_SUBMITTED_ACTION_USER,
 } from './prompts'
@@ -91,6 +93,7 @@ const gradingRubric = v.record(v.string(), v.number())
 
 const submittedActionSummary = v.object({
   id: v.id('submitted_actions'),
+  createdAtMs: v.number(),
   factionId: v.id('factions'),
   actionTypeId: v.string(),
   actionName: v.string(),
@@ -121,6 +124,7 @@ const scoringCriterionInput = v.object({
 
 const roundProcessingSubmission = v.object({
   submissionId: v.id('submitted_actions'),
+  createdAtMs: v.number(),
   factionId: v.id('factions'),
   factionName: v.string(),
   factionDescription: v.string(),
@@ -130,6 +134,10 @@ const roundProcessingSubmission = v.object({
   actionPrompt: v.string(),
   content: v.string(),
   cost: v.number(),
+  gradingRubric: v.optional(gradingRubric),
+  effectiveness: v.optional(v.number()),
+  impact: v.optional(v.number()),
+  reasoning: v.optional(v.string()),
   scoringCriteria: v.array(scoringCriterionInput),
   isAbstain: v.boolean(),
 })
@@ -157,6 +165,7 @@ type RoundProcessingCriterionValue = {
 
 type RoundProcessingSubmissionValue = {
   submissionId: Id<'submitted_actions'>
+  createdAtMs: number
   factionId: Id<'factions'>
   factionName: string
   factionDescription: string
@@ -166,6 +175,10 @@ type RoundProcessingSubmissionValue = {
   actionPrompt: string
   content: string
   cost: number
+  gradingRubric?: Record<string, number>
+  effectiveness?: number
+  impact?: number
+  reasoning?: string
   scoringCriteria: Array<RoundProcessingCriterionValue>
   isAbstain: boolean
 }
@@ -175,6 +188,19 @@ type ScoredSubmissionValue = {
   effectiveness: number
   impact: number
   reasoning: string
+}
+
+type RoundProcessingScoredSubmissionValue = RoundProcessingSubmissionValue & {
+  gradingRubric: Record<string, number>
+  effectiveness: number
+  impact: number
+  reasoning: string
+}
+
+type RoundOutcomeValue = {
+  sentimentDelta: SentimentsValue
+  narrative: string
+  escalation: string
 }
 
 type BeginRoundProcessingResult = {
@@ -207,6 +233,10 @@ export const getMainScreenRoundState = query({
       scenarioTitle: v.string(),
       event: v.string(),
       sentiments: sentiments,
+      sentimentBefore: v.optional(sentiments),
+      sentimentAfter: v.optional(sentiments),
+      narrative: v.optional(v.string()),
+      escalation: v.optional(v.string()),
       roundNumber: v.optional(v.number()),
       submittingDeadlineMs: v.optional(v.number()),
       participatingFactionCount: v.number(),
@@ -214,6 +244,7 @@ export const getMainScreenRoundState = query({
       allParticipatingSubmitted: v.boolean(),
       factions: v.array(participatingFactionStatus),
       submittedActions: v.array(submittedActionSummary),
+      winningSubmissionId: v.optional(v.id('submitted_actions')),
     }),
   ),
   handler: async (ctx, args) => {
@@ -274,6 +305,7 @@ export const getMainScreenRoundState = query({
 
             return {
               id: action._id,
+              createdAtMs: action._creationTime,
               factionId: action.faction_id,
               actionTypeId: action.action_type_id,
               actionName:
@@ -287,6 +319,7 @@ export const getMainScreenRoundState = query({
               impact: action.impact,
             }
           })
+    const winningSubmissionId = getWinningSubmittedActionId(submittedActions)
 
     const submittedFactionCount = round
       ? Object.values(round.faction_submitted).filter(Boolean).length
@@ -298,6 +331,10 @@ export const getMainScreenRoundState = query({
       scenarioTitle: game.scenario_title ?? 'Breaking Story',
       event: round?.event_development ?? game.event,
       sentiments: game.sentiments,
+      sentimentBefore: round?.sentiment_before,
+      sentimentAfter: round?.sentiment_after,
+      narrative: round?.narrative,
+      escalation: round?.escalation,
       roundNumber: round?.number,
       submittingDeadlineMs: round?.submitting_deadline_ms,
       participatingFactionCount: participatingFactionIds.length,
@@ -308,6 +345,7 @@ export const getMainScreenRoundState = query({
         participatingFactionIds.every((factionId) => Boolean(round.faction_submitted[factionId])),
       factions: factionsForView,
       submittedActions,
+      winningSubmissionId,
     }
   },
 })
@@ -730,74 +768,121 @@ export const processRoundSubmissions = action({
       throw new ConvexError('Current round not found for processing')
     }
 
-    if (begin.status === 'ready') {
-      const complete = (await ctx.runMutation(
-        internal.gameplay.completeRoundProcessingAndEnterResults as any,
-        {
-          gameId: args.gameId,
-          roundId: begin.roundId,
-          scores: {},
-        },
-      )) as CompleteRoundProcessingResult
-
-      return {
-        status: complete.status === 'completed' ? ('processed' as const) : ('noop' as const),
-        phase: complete.phase,
-        processedCount: 0,
-        appliedCount: complete.appliedCount,
-      }
-    }
-
-    const submissions = begin.submissions ?? []
-    const needsModel = submissions.some(
-      (submission) => !submission.isAbstain && submission.scoringCriteria.length > 0,
-    )
     const openRouterApiKey = getEnvironmentVariable('OPENROUTER_API_KEY')
 
-    if (needsModel && !openRouterApiKey) {
-      throw new ConvexError('OPENROUTER_API_KEY is required for submission scoring')
+    if (!openRouterApiKey) {
+      throw new ConvexError('OPENROUTER_API_KEY is required for round processing')
     }
 
     const openRouterModel =
       getEnvironmentVariable('OPENROUTER_MODEL') || DEFAULT_OPENROUTER_MODEL
     const liquid = new Liquid()
-    const openRouter = openRouterApiKey ? new OpenRouter({ apiKey: openRouterApiKey }) : null
-    const sentimentsText = formatSentiments(begin.sentiments ?? getDefaultSentiments())
+    const openRouter = new OpenRouter({ apiKey: openRouterApiKey })
 
-    const scoredEntries = await Promise.all(
-      submissions.map(async (submission: RoundProcessingSubmissionValue) => {
-        const score = await scoreSubmittedRoundAction({
-          submission,
-          scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
-          roundNumber: begin.roundNumber ?? 1,
-          maxRounds: begin.maxRounds ?? 1,
-          event: begin.event ?? '',
-          sentimentsText,
-          liquid,
-          openRouter,
-          openRouterModel,
-        })
+    let processedCount = 0
+    let appliedCount = 0
+    let scoredSubmissions: Array<RoundProcessingScoredSubmissionValue> = []
 
-        return [submission.submissionId, score] as const
-      }),
+    if (begin.status === 'started') {
+      const submissions = begin.submissions ?? []
+      const sentimentsText = formatSentiments(begin.sentiments ?? getDefaultSentiments())
+
+      const scoredEntries = await Promise.all(
+        submissions.map(async (submission: RoundProcessingSubmissionValue) => {
+          const score = await scoreSubmittedRoundAction({
+            submission,
+            scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
+            roundNumber: begin.roundNumber ?? 1,
+            maxRounds: begin.maxRounds ?? 1,
+            event: begin.event ?? '',
+            sentimentsText,
+            liquid,
+            openRouter,
+            openRouterModel,
+          })
+
+          return [submission.submissionId, score] as const
+        }),
+      )
+
+      const scores = Object.fromEntries(scoredEntries) as Record<
+        Id<'submitted_actions'>,
+        ScoredSubmissionValue
+      >
+
+      const applied = (await ctx.runMutation(
+        internal.gameplay.applyRoundProcessingScores as any,
+        {
+          gameId: args.gameId,
+          roundId: begin.roundId,
+          scores,
+        },
+      )) as CompleteRoundProcessingResult
+
+      if (applied.status === 'noop') {
+        return {
+          status: 'noop' as const,
+          phase: applied.phase,
+          processedCount: 0,
+          appliedCount: 0,
+        }
+      }
+
+      processedCount = submissions.length
+      appliedCount = applied.appliedCount
+      scoredSubmissions = submissions.map((submission) => {
+        const score = scores[submission.submissionId]
+
+        if (!score) {
+          throw new ConvexError('Missing score for submission')
+        }
+
+        return {
+          ...submission,
+          gradingRubric: score.gradingRubric,
+          effectiveness: score.effectiveness,
+          impact: score.impact,
+          reasoning: score.reasoning,
+        }
+      })
+    } else {
+      scoredSubmissions = toScoredRoundProcessingSubmissions(begin.submissions ?? [])
+    }
+
+    const winningSubmission = getWinningRoundProcessingSubmission(scoredSubmissions)
+    const outcome = await resolveRoundOutcome({
+      scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
+      roundNumber: begin.roundNumber ?? 1,
+      maxRounds: begin.maxRounds ?? 1,
+      event: begin.event ?? '',
+      sentimentBefore: begin.sentiments ?? getDefaultSentiments(),
+      winningSubmission,
+      scoredSubmissions,
+      liquid,
+      openRouter,
+      openRouterModel,
+    })
+    const sentimentAfter = applySentimentDelta(
+      begin.sentiments ?? getDefaultSentiments(),
+      outcome.sentimentDelta,
     )
 
-    const scores = Object.fromEntries(scoredEntries) as Record<Id<'submitted_actions'>, ScoredSubmissionValue>
-
     const complete = (await ctx.runMutation(
-      internal.gameplay.completeRoundProcessingAndEnterResults as any,
+      internal.gameplay.finalizeRoundProcessingAndEnterResults as any,
       {
         gameId: args.gameId,
         roundId: begin.roundId,
-        scores,
+        sentimentAfter,
+        narrative: outcome.narrative,
+        escalation: outcome.escalation,
       },
     )) as CompleteRoundProcessingResult
 
     return {
       status: complete.status === 'completed' ? ('processed' as const) : ('noop' as const),
       phase: complete.phase,
-      processedCount: submissions.length,
-      appliedCount: complete.appliedCount,
+      processedCount,
+      appliedCount: complete.status === 'completed' ? appliedCount : 0,
     }
   },
 })
@@ -1132,6 +1217,51 @@ export const beginRoundProcessing = internalMutation({
     )
 
     if (allScored) {
+      const scoredPayloads = sortedSubmissions.map((submission) => {
+        const faction = factionsById.get(submission.faction_id)
+
+        if (!faction) {
+          throw new ConvexError('Faction not found for submitted action')
+        }
+
+        const actionType =
+          submission.action_type_id === 'abstain'
+            ? null
+            : findActionType(game, faction, submission.action_type_id)
+        const scoringCriteria =
+          actionType?.scoring_criteria.map((criterion) => ({
+            name: criterion.name,
+            description: criterion.description,
+            aiInstructions: criterion.ai_scoring_instructions,
+          })) ?? []
+
+        return {
+          submissionId: submission._id,
+          createdAtMs: submission._creationTime,
+          factionId: faction._id,
+          factionName: faction.name,
+          factionDescription: faction.description,
+          factionArchetype: faction.archetype,
+          actionTypeId: submission.action_type_id,
+          actionName:
+            submission.action_type_id === 'abstain'
+              ? 'No Submission'
+              : actionType?.name ?? formatActionTypeLabel(submission.action_type_id),
+          actionPrompt:
+            submission.action_type_id === 'abstain'
+              ? 'No submission before the deadline.'
+              : actionType?.prompt ?? 'No prompt metadata available.',
+          content: submission.content,
+          cost: submission.cost,
+          gradingRubric: submission.grading_rubric,
+          effectiveness: submission.effectiveness,
+          impact: submission.impact,
+          reasoning: submission.reasoning,
+          scoringCriteria,
+          isAbstain: submission.action_type_id === 'abstain',
+        }
+      })
+
       return {
         status: 'ready' as const,
         phase,
@@ -1141,7 +1271,7 @@ export const beginRoundProcessing = internalMutation({
         scenarioTitle: game.scenario_title ?? 'Breaking Story',
         event: round.event_development,
         sentiments: game.sentiments,
-        submissions: [],
+        submissions: scoredPayloads,
       }
     }
 
@@ -1165,6 +1295,7 @@ export const beginRoundProcessing = internalMutation({
 
       return {
         submissionId: submission._id,
+        createdAtMs: submission._creationTime,
         factionId: faction._id,
         factionName: faction.name,
         factionDescription: faction.description,
@@ -1180,6 +1311,10 @@ export const beginRoundProcessing = internalMutation({
             : actionType?.prompt ?? 'No prompt metadata available.',
         content: submission.content,
         cost: submission.cost,
+        gradingRubric: submission.grading_rubric,
+        effectiveness: submission.effectiveness,
+        impact: submission.impact,
+        reasoning: submission.reasoning,
         scoringCriteria,
         isAbstain: submission.action_type_id === 'abstain',
       }
@@ -1199,7 +1334,7 @@ export const beginRoundProcessing = internalMutation({
   },
 })
 
-export const completeRoundProcessingAndEnterResults = internalMutation({
+export const applyRoundProcessingScores = internalMutation({
   args: {
     gameId: v.string(),
     roundId: v.id('rounds'),
@@ -1241,17 +1376,18 @@ export const completeRoundProcessingAndEnterResults = internalMutation({
       .query('submitted_actions')
       .withIndex('by_round', (q) => q.eq('round_id', round._id))
       .collect()
+    const submissionIds = new Set(submissions.map((submission) => submission._id))
 
     let appliedCount = 0
 
-    for (const submission of submissions) {
-      const score = args.scores[submission._id]
-
-      if (!score) {
+    for (const [submissionId, score] of Object.entries(args.scores) as Array<
+      [Id<'submitted_actions'>, ScoredSubmissionValue]
+    >) {
+      if (!submissionIds.has(submissionId)) {
         continue
       }
 
-      await ctx.db.patch("submitted_actions", submission._id, {
+      await ctx.db.patch("submitted_actions", submissionId, {
         grading_rubric: score.gradingRubric,
         effectiveness: score.effectiveness,
         impact: score.impact,
@@ -1260,14 +1396,69 @@ export const completeRoundProcessingAndEnterResults = internalMutation({
       appliedCount += 1
     }
 
+    return {
+      status: 'completed' as const,
+      phase: GamePhase.RoundProcessing,
+      appliedCount,
+    }
+  },
+})
+
+export const finalizeRoundProcessingAndEnterResults = internalMutation({
+  args: {
+    gameId: v.string(),
+    roundId: v.id('rounds'),
+    sentimentAfter: sentiments,
+    narrative: v.string(),
+    escalation: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('completed'), v.literal('noop')),
+    phase: gamePhase,
+    appliedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      throw new ConvexError('Game not found')
+    }
+
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundProcessing) {
+      return {
+        status: 'noop' as const,
+        phase,
+        appliedCount: 0,
+      }
+    }
+
+    const round = await getCurrentRound(ctx, game)
+
+    if (!round || round._id !== args.roundId) {
+      return {
+        status: 'noop' as const,
+        phase,
+        appliedCount: 0,
+      }
+    }
+
+    await ctx.db.patch("rounds", round._id, {
+      sentiment_after: args.sentimentAfter,
+      narrative: normalizeRoundNarrative(args.narrative),
+      escalation: normalizeRoundEscalation(args.escalation),
+    })
+
     await ctx.db.patch("games", game._id, {
+      sentiments: args.sentimentAfter,
       phase: GamePhase.RoundResults,
     })
 
     return {
       status: 'completed' as const,
       phase: GamePhase.RoundResults,
-      appliedCount,
+      appliedCount: 0,
     }
   },
 })
@@ -1636,7 +1827,7 @@ async function scoreSubmittedRoundAction({
   event: string
   sentimentsText: string
   liquid: Liquid
-  openRouter: OpenRouter | null
+  openRouter: OpenRouter
   openRouterModel: string
 }): Promise<ScoredSubmissionValue> {
   const criterionNames = Array.from(
@@ -1655,17 +1846,7 @@ async function scoreSubmittedRoundAction({
   }
 
   if (criterionNames.length === 0) {
-    return createZeroSubmissionScore(
-      criterionNames,
-      'Action scoring criteria unavailable; assigned zero score.',
-    )
-  }
-
-  if (!openRouter) {
-    return createZeroSubmissionScore(
-      criterionNames,
-      'Scoring service unavailable; assigned zero score.',
-    )
+    throw new ConvexError('Cannot score submission without scoring criteria')
   }
 
   const templateVars = {
@@ -1685,57 +1866,50 @@ async function scoreSubmittedRoundAction({
   const systemPrompt = await liquid.parseAndRender(SCORE_SUBMITTED_ACTION_SYSTEM, templateVars)
   const userPrompt = await liquid.parseAndRender(SCORE_SUBMITTED_ACTION_USER, templateVars)
 
-  try {
-    return await retry(async () => {
-      const response = await openRouter.chat.send({
-        chatGenerationParams: {
-          model: openRouterModel,
-          stream: false,
-          temperature: 0.2,
-          reasoning: {
-            effort: 'medium',
-            summary: 'detailed',
+  return retry(async () => {
+    const response = await openRouter.chat.send({
+      chatGenerationParams: {
+        model: openRouterModel,
+        stream: false,
+        temperature: 0.2,
+        reasoning: {
+          effort: 'medium',
+          summary: 'detailed',
+        },
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
           },
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt,
-            },
-            {
-              role: 'user',
-              content: userPrompt,
-            },
-          ],
-          responseFormat: {
-            type: 'json_schema',
-            jsonSchema: {
-              name: 'submission_score',
-              strict: true,
-              schema: buildSubmissionScoreSchema(criterionNames),
-            },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+        responseFormat: {
+          type: 'json_schema',
+          jsonSchema: {
+            name: 'submission_score',
+            strict: true,
+            schema: buildSubmissionScoreSchema(criterionNames),
           },
         },
-      })
-
-      const parsed = parseSubmissionScore(extractAssistantText(response), criterionNames, submission.cost)
-
-      if (!parsed) {
-        throw new Error('Model did not return a valid submission score payload')
-      }
-
-      return parsed
-    }, {
-      maxAttempts: 3,
-      delay: 500,
-      factor: 2,
-      maxDelay: 2_500,
+      },
     })
-  } catch {
-    return createZeroSubmissionScore(
-      criterionNames,
-      'Scoring failed after retries; assigned zero score.',
-    )
-  }
+
+    const parsed = parseSubmissionScore(extractAssistantText(response), criterionNames, submission.cost)
+
+    if (!parsed) {
+      throw new Error('Model did not return a valid submission score payload')
+    }
+
+    return parsed
+  }, {
+    maxAttempts: 3,
+    delay: 500,
+    factor: 2,
+    maxDelay: 2_500,
+  })
 }
 
 function parseSubmissionScore(
@@ -1769,6 +1943,324 @@ function parseSubmissionScore(
   } catch {
     return null
   }
+}
+
+function toScoredRoundProcessingSubmissions(
+  submissions: Array<RoundProcessingSubmissionValue>,
+): Array<RoundProcessingScoredSubmissionValue> {
+  return submissions.map((submission) => {
+    if (
+      !submission.gradingRubric ||
+      typeof submission.effectiveness !== 'number' ||
+      typeof submission.impact !== 'number' ||
+      typeof submission.reasoning !== 'string' ||
+      submission.reasoning.trim().length === 0
+    ) {
+      throw new ConvexError('Round processing is missing scored submission fields')
+    }
+
+    return {
+      ...submission,
+      gradingRubric: submission.gradingRubric,
+      effectiveness: submission.effectiveness,
+      impact: submission.impact,
+      reasoning: submission.reasoning,
+    }
+  })
+}
+
+function getWinningRoundProcessingSubmission(
+  submissions: Array<RoundProcessingScoredSubmissionValue>,
+): RoundProcessingScoredSubmissionValue {
+  if (submissions.length === 0) {
+    throw new ConvexError('No submissions found for round processing')
+  }
+
+  return submissions
+    .slice()
+    .sort((a, b) => {
+      if (a.impact !== b.impact) {
+        return b.impact - a.impact
+      }
+
+      if (a.createdAtMs !== b.createdAtMs) {
+        return a.createdAtMs - b.createdAtMs
+      }
+
+      return String(a.submissionId).localeCompare(String(b.submissionId))
+    })[0] as RoundProcessingScoredSubmissionValue
+}
+
+async function resolveRoundOutcome({
+  scenarioTitle,
+  roundNumber,
+  maxRounds,
+  event,
+  sentimentBefore,
+  winningSubmission,
+  scoredSubmissions,
+  liquid,
+  openRouter,
+  openRouterModel,
+}: {
+  scenarioTitle: string
+  roundNumber: number
+  maxRounds: number
+  event: string
+  sentimentBefore: SentimentsValue
+  winningSubmission: RoundProcessingScoredSubmissionValue
+  scoredSubmissions: Array<RoundProcessingScoredSubmissionValue>
+  liquid: Liquid
+  openRouter: OpenRouter
+  openRouterModel: string
+}): Promise<RoundOutcomeValue> {
+  const templateVars = {
+    scenario_title: scenarioTitle,
+    round_number: roundNumber,
+    max_rounds: maxRounds,
+    event,
+    sentiment_before: formatSentiments(sentimentBefore),
+    winning_submission: formatWinningSubmissionForPrompt(winningSubmission),
+    scored_submissions: formatScoredSubmissionsForPrompt(scoredSubmissions),
+  }
+  const systemPrompt = await liquid.parseAndRender(RESOLVE_ROUND_OUTCOME_SYSTEM, templateVars)
+  const userPrompt = await liquid.parseAndRender(RESOLVE_ROUND_OUTCOME_USER, templateVars)
+
+  return retry(async () => {
+    const response = await openRouter.chat.send({
+      chatGenerationParams: {
+        model: openRouterModel,
+        stream: false,
+        temperature: 0.7,
+        reasoning: {
+          effort: 'medium',
+          summary: 'detailed',
+        },
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: userPrompt,
+          },
+        ],
+        responseFormat: {
+          type: 'json_schema',
+          jsonSchema: {
+            name: 'round_outcome',
+            strict: true,
+            schema: buildRoundOutcomeSchema(),
+          },
+        },
+      },
+    })
+
+    const parsed = parseRoundOutcome(extractAssistantText(response))
+
+    if (!parsed) {
+      throw new Error('Model did not return a valid round outcome payload')
+    }
+
+    return parsed
+  }, {
+    maxAttempts: 3,
+    delay: 500,
+    factor: 2,
+    maxDelay: 2_500,
+  })
+}
+
+function parseRoundOutcome(value: string): RoundOutcomeValue | null {
+  try {
+    const parsed = JSON.parse(extractJsonPayload(value)) as unknown
+
+    if (!parsed || typeof parsed !== 'object') {
+      return null
+    }
+
+    const objectValue = parsed as {
+      sentiment_delta?: unknown
+      narrative?: unknown
+      escalation?: unknown
+    }
+    const sentimentDelta = normalizeSentimentDelta(objectValue.sentiment_delta)
+
+    if (
+      !sentimentDelta ||
+      typeof objectValue.narrative !== 'string' ||
+      typeof objectValue.escalation !== 'string'
+    ) {
+      return null
+    }
+
+    return {
+      sentimentDelta,
+      narrative: normalizeRoundNarrative(objectValue.narrative),
+      escalation: normalizeRoundEscalation(objectValue.escalation),
+    }
+  } catch {
+    return null
+  }
+}
+
+function buildRoundOutcomeSchema(): Record<string, unknown> {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['sentiment_delta', 'narrative', 'escalation'],
+    properties: {
+      sentiment_delta: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['stability', 'attention', 'curiosity', 'corporate_blame', 'government_blame'],
+        properties: {
+          stability: { type: 'number' },
+          attention: { type: 'number' },
+          curiosity: { type: 'number' },
+          corporate_blame: { type: 'number' },
+          government_blame: { type: 'number' },
+        },
+      },
+      narrative: {
+        type: 'string',
+      },
+      escalation: {
+        type: 'string',
+      },
+    },
+  }
+}
+
+function normalizeSentimentDelta(value: unknown): SentimentsValue | null {
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const objectValue = value as Record<string, unknown>
+  const stability = normalizeFiniteNumber(objectValue.stability)
+  const attention = normalizeFiniteNumber(objectValue.attention)
+  const curiosity = normalizeFiniteNumber(objectValue.curiosity)
+  const corporateBlame = normalizeFiniteNumber(objectValue.corporate_blame)
+  const governmentBlame = normalizeFiniteNumber(objectValue.government_blame)
+
+  if (
+    stability === null ||
+    attention === null ||
+    curiosity === null ||
+    corporateBlame === null ||
+    governmentBlame === null
+  ) {
+    return null
+  }
+
+  return {
+    stability: roundToSingleDecimal(stability),
+    attention: roundToSingleDecimal(attention),
+    curiosity: roundToSingleDecimal(curiosity),
+    corporate_blame: roundToSingleDecimal(corporateBlame),
+    government_blame: roundToSingleDecimal(governmentBlame),
+  }
+}
+
+function normalizeFiniteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function applySentimentDelta(
+  sentimentBefore: SentimentsValue,
+  sentimentDelta: SentimentsValue,
+): SentimentsValue {
+  return {
+    stability: clampSentimentValue(sentimentBefore.stability + sentimentDelta.stability),
+    attention: clampSentimentValue(sentimentBefore.attention + sentimentDelta.attention),
+    curiosity: clampSentimentValue(sentimentBefore.curiosity + sentimentDelta.curiosity),
+    corporate_blame: clampSentimentValue(sentimentBefore.corporate_blame + sentimentDelta.corporate_blame),
+    government_blame: clampSentimentValue(
+      sentimentBefore.government_blame + sentimentDelta.government_blame,
+    ),
+  }
+}
+
+function clampSentimentValue(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  if (value < 0) {
+    return 0
+  }
+
+  if (value > 100) {
+    return 100
+  }
+
+  return roundToSingleDecimal(value)
+}
+
+function formatWinningSubmissionForPrompt(submission: RoundProcessingScoredSubmissionValue): string {
+  return [
+    `Faction: ${submission.factionName}`,
+    `Action: ${submission.actionName}`,
+    `Submitted Content: ${submission.content}`,
+    `Effectiveness: ${submission.effectiveness}`,
+    `Impact: ${submission.impact}`,
+    `Reasoning: ${submission.reasoning}`,
+    `Was abstain: ${submission.isAbstain ? 'yes' : 'no'}`,
+  ].join('\n')
+}
+
+function formatScoredSubmissionsForPrompt(
+  submissions: Array<RoundProcessingScoredSubmissionValue>,
+): string {
+  if (submissions.length === 0) {
+    return '- No submissions available.'
+  }
+
+  return submissions
+    .map(
+      (submission, index) =>
+        `${index + 1}. Faction: ${submission.factionName}\n` +
+        `   - Action: ${submission.actionName}\n` +
+        `   - Content: ${submission.content}\n` +
+        `   - Effectiveness: ${submission.effectiveness}\n` +
+        `   - Impact: ${submission.impact}\n` +
+        `   - Reasoning: ${submission.reasoning}\n` +
+        `   - Abstain: ${submission.isAbstain ? 'yes' : 'no'}`,
+    )
+    .join('\n')
+}
+
+function getWinningSubmittedActionId(
+  submissions: Array<{
+    id: Id<'submitted_actions'>
+    createdAtMs: number
+    impact?: number
+  }>,
+): Id<'submitted_actions'> | undefined {
+  const scored = submissions.filter(
+    (submission): submission is { id: Id<'submitted_actions'>; createdAtMs: number; impact: number } =>
+      typeof submission.impact === 'number',
+  )
+
+  if (scored.length === 0) {
+    return undefined
+  }
+
+  return scored
+    .slice()
+    .sort((a, b) => {
+      if (a.impact !== b.impact) {
+        return b.impact - a.impact
+      }
+
+      if (a.createdAtMs !== b.createdAtMs) {
+        return a.createdAtMs - b.createdAtMs
+      }
+
+      return String(a.id).localeCompare(String(b.id))
+    })[0]?.id
 }
 
 function normalizeGradingRubric(
@@ -1888,6 +2380,28 @@ function normalizeReasoning(value: string): string {
   }
 
   return trimmed.slice(0, 2_000)
+}
+
+function normalizeRoundNarrative(value: string): string {
+  return normalizeRoundText(value, 4_000, 'Round narrative')
+}
+
+function normalizeRoundEscalation(value: string): string {
+  return normalizeRoundText(value, 6_000, 'Round escalation')
+}
+
+function normalizeRoundText(value: string, maxLength: number, label: string): string {
+  const trimmed = value
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  if (!trimmed) {
+    throw new ConvexError(`${label} is required`)
+  }
+
+  return trimmed.slice(0, maxLength)
 }
 
 function extractJsonPayload(value: string): string {

@@ -33,11 +33,10 @@ function PlayerRoundProcessingPhaseRoute() {
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
-      subtitle="All teams are locked. Results are being scored."
       title="Scoring the Spin"
     >
       <PhaseHoldingScreen
-        description="The main display is processing outcomes. Results are up next."
+        description="Results incoming..."
         label="Scoring The Spin"
         title="Waiting For Results"
       />

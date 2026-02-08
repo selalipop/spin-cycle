@@ -48,7 +48,7 @@ export function FactionCard({
           <CardTitle className={cn('font-heading text-lg leading-tight', theme.accentTextClass)}>
             {name}
           </CardTitle>
-          <Badge className={cn('rounded-full px-3 py-1 text-[0.68rem] uppercase', theme.chipClass)}>
+          <Badge className={cn('rounded-full px-3 py-1 text-xs uppercase', theme.chipClass)}>
             {playerCount} on team
           </Badge>
         </div>
@@ -60,7 +60,7 @@ export function FactionCard({
       {onSelect ? (
         <CardFooter className="pt-0">
           <Button
-            className="h-11 w-full border-2 border-black font-heading text-[0.86rem] uppercase tracking-[0.06em]"
+            className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.06em]"
             onClick={onSelect}
             variant={selected ? 'default' : 'secondary'}
           >

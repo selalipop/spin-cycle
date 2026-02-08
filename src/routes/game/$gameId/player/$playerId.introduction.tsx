@@ -33,7 +33,7 @@ function PlayerIntroductionPhaseRoute() {
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
-      subtitle="The host is running the opening scene on the main display."
+      subtitle="Watch the big screen."
       title="Opening Scene"
     >
       <PlayerEstablishingPlaceholder factionName={playerState.player.faction.name} />

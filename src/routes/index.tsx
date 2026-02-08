@@ -49,7 +49,7 @@ function Home() {
 
   return (
     <PageShell
-      subtitle="A Jackbox-style party game where teams race to shape the story together."
+      subtitle="Shape the narrative. Control the spin."
       title="Are you ready to spin?"
     >
       <HomeTitleRibbon />
@@ -57,20 +57,17 @@ function Home() {
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="neo-panel neo-grid neo-tilt-left gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
-            <Badge className="w-fit rounded-full border border-black bg-rose-300 px-3 py-1 text-[0.66rem] uppercase text-black">
+            <Badge className="w-fit rounded-full border border-black bg-rose-300 px-3 py-1 text-xs uppercase text-black">
               Host Screen
             </Badge>
             <CardTitle className="font-display text-3xl text-black">Start a Game</CardTitle>
             <CardDescription className="text-black/90">
-              Create a fresh room and bring everyone in.
+              Set up a room and run the show.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-2">
-            <p className="text-sm text-black/90">
-              You control the timer, the opening scene, and when each round begins.
-            </p>
             <Button
-              className="h-12 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-12 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               disabled={isCreating || isJoining}
               onClick={handleCreate}
               type="button"
@@ -82,12 +79,12 @@ function Home() {
 
         <Card className="neo-panel neo-grid neo-tilt-right gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
-            <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.66rem] uppercase text-black">
+            <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs uppercase text-black">
               Phone Players
             </Badge>
             <CardTitle className="font-display text-3xl text-black">Join a Game</CardTitle>
             <CardDescription className="text-black/90">
-              Enter the short code from the host screen.
+              Got a code? Jump in.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-2">
@@ -102,7 +99,7 @@ function Home() {
               value={joinCode}
             />
             <Button
-              className="h-12 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-12 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               disabled={!normalizedJoinCode || isCreating || isJoining}
               onClick={handleJoin}
               type="button"
@@ -115,7 +112,7 @@ function Home() {
       </section>
 
       {error ? (
-        <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.7rem] text-destructive-foreground">
+        <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
           {error}
         </Badge>
       ) : null}

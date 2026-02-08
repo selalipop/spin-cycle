@@ -9,13 +9,12 @@ import { ActionMenu } from '~/components/gameplay/action-menu'
 import { PhaseHoldingScreen } from '~/components/gameplay/phase-holding-screen'
 import { PlayerStateLoadingScreen, PlayerStateNotFoundScreen } from '~/components/gameplay/player-route-shells'
 import { SubmissionCompose } from '~/components/gameplay/submission-compose'
-import { FactionCard } from '~/components/lobby/faction-card'
 import { PageShell } from '~/components/lobby/page-shell'
 import { PlayerListItem } from '~/components/lobby/player-list-item'
 import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { ScrollArea } from '~/components/ui/scroll-area'
 import { usePlayerRoundState } from '~/lib/use-player-round-state'
 
@@ -124,7 +123,7 @@ function PlayerRoundVotingPhaseRoute() {
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
-      subtitle="Coordinate fast. The first teammate to lock a move submits for everyone."
+      subtitle="First to lock a move wins."
       title={`Round ${playerState.roundNumber ?? 1}: Make Your Move`}
     >
       {screen === 'briefing' ? (
@@ -155,7 +154,7 @@ function PlayerRoundVotingPhaseRoute() {
       )}
 
       {error ? (
-        <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+        <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
           {error}
         </Badge>
       ) : null}
@@ -184,9 +183,6 @@ function RoundVotingBriefingScreen({
         <Card className="neo-panel neo-grid gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Faction Briefing</CardTitle>
-            <CardDescription className="text-black/90">
-              Read this first, then continue to your team move menu.
-            </CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4 pb-2">
@@ -199,7 +195,7 @@ function RoundVotingBriefingScreen({
               <p className="neo-label text-black/78">Full Brief</p>
               <ScrollArea className="mt-2 h-56 overflow-hidden rounded-xl border-2 border-black bg-white">
                 <div className="p-3">
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-black/92 sm:text-base">
+                  <p className="whitespace-pre-wrap text-base leading-relaxed text-black/92">
                     {briefing}
                   </p>
                 </div>
@@ -207,7 +203,7 @@ function RoundVotingBriefingScreen({
             </div>
 
             <Button
-              className="h-11 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-11 border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               onClick={onContinue}
               type="button"
             >
@@ -258,14 +254,14 @@ function RoundVotingActionsScreen({
         {playerState.factionSubmitted ? (
           <>
             <PhaseHoldingScreen
-              description="Your faction move is already locked for this round. Hang tight while other teams finish."
+              description="Your faction move is locked. Hang tight while other teams finish."
               label="Move Locked"
               title="Waiting On Other Teams"
             />
             <Card className="neo-panel py-0">
               <CardContent className="space-y-2 px-6 py-4">
                 <p className="neo-label text-black/78">Locked Move</p>
-                <p className="text-sm text-black/92">{lockedMove}</p>
+                <p className="text-base text-black/92">{lockedMove}</p>
               </CardContent>
             </Card>
           </>
@@ -297,9 +293,6 @@ function RoundVotingActionsScreen({
         <Card className="neo-panel neo-grid gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Round Context</CardTitle>
-            <CardDescription className="text-black/90">
-              Keep your move aligned with your faction objective.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-2">
             <div className="neo-panel-soft p-4">
@@ -309,7 +302,7 @@ function RoundVotingActionsScreen({
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                className="h-10 border-2 border-black bg-white font-heading text-xs uppercase tracking-[0.08em] text-black hover:bg-amber-100"
+                className="h-10 border-2 border-black bg-white font-heading text-sm uppercase tracking-[0.08em] text-black hover:bg-amber-100"
                 onClick={onBackToBriefing}
                 type="button"
                 variant="secondary"
@@ -317,7 +310,7 @@ function RoundVotingActionsScreen({
                 View Briefing Again
               </Button>
               {playerState.factionSubmitted ? (
-                <Badge className="rounded-full border border-black bg-emerald-300 px-3 py-1 text-[0.66rem] uppercase text-black">
+                <Badge className="rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs uppercase text-black">
                   Team Locked
                 </Badge>
               ) : null}
@@ -325,8 +318,6 @@ function RoundVotingActionsScreen({
           </CardContent>
         </Card>
       </section>
-
-      <VotingTeamCard playerState={playerState} />
     </>
   )
 }
@@ -358,11 +349,11 @@ function VotingPlayerCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className="rounded-full border border-black bg-white px-3 py-1 text-[0.66rem] text-black">
+          <Badge className="rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
             Credits: {playerState.factionCredits}
           </Badge>
           {remainingSeconds !== null ? (
-            <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 font-mono text-[0.66rem] text-black">
+            <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 font-mono text-xs text-black">
               {remainingSeconds}s left
             </Badge>
           ) : null}
@@ -377,17 +368,8 @@ function VotingTeamCard({ playerState }: { playerState: PlayerRoundStateValue })
     <Card className="neo-panel gap-4 py-4">
       <CardHeader className="gap-3 pb-0">
         <CardTitle className="font-display text-3xl text-black">Your Team</CardTitle>
-        <CardDescription className="text-black/90">
-          Players currently in {playerState.player.faction.name}.
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 pb-2">
-        <FactionCard
-          code={playerState.player.faction.code}
-          description={playerState.player.faction.description}
-          name={playerState.player.faction.name}
-          playerCount={playerState.factionPlayers.length}
-        />
         {playerState.factionPlayers.map((factionPlayer) => (
           <PlayerListItem
             avatar={factionPlayer.avatar}

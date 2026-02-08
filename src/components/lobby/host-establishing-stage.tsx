@@ -26,8 +26,8 @@ export function HostEstablishingStage({
           <div className="flex max-w-xl flex-col items-center gap-4 text-center">
             <Spinner className="size-9 text-black" />
             <p className="font-heading text-2xl text-black">Preparing the opening scene.</p>
-            <p className="text-sm text-black/92">
-              We are loading the intro clip and story briefing for everyone in the room.
+            <p className="text-base text-black/92">
+              Loading the intro clip and story briefing.
             </p>
           </div>
         </CardContent>
@@ -41,7 +41,7 @@ export function HostEstablishingStage({
     return (
       <Card className="neo-panel gap-4 overflow-hidden py-4">
         <CardHeader className="gap-3 pb-0">
-          <Badge className="w-fit rounded-full border border-black bg-rose-300 px-3 py-1 text-[0.68rem] uppercase text-black">
+          <Badge className="w-fit rounded-full border border-black bg-rose-300 px-3 py-1 text-xs uppercase text-black">
             Opening Scene
           </Badge>
           <CardTitle className="font-display text-3xl text-black sm:text-4xl">{scenarioTitle}</CardTitle>
@@ -57,7 +57,7 @@ export function HostEstablishingStage({
           >
             <source src={videoSrc} type="video/mp4" />
           </video>
-          <p className="text-sm text-black/90">
+          <p className="text-base text-black/90">
             Once the clip finishes, launch the first round from the control panel.
           </p>
         </CardContent>
@@ -70,7 +70,7 @@ export function HostEstablishingStage({
       <CardHeader className="gap-3 pb-0">
         <div className="flex flex-wrap items-center gap-3">
           <CardTitle className="font-display text-3xl text-black sm:text-4xl">{scenarioTitle}</CardTitle>
-          <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] uppercase text-black">
+          <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-xs uppercase text-black">
             Story Brief
           </Badge>
         </div>
@@ -85,15 +85,15 @@ export function HostEstablishingStage({
         <div className="grid gap-3 md:grid-cols-3">
           <div className="neo-panel-soft p-4">
             <p className="neo-label text-black/78">Team Goal</p>
-            <p className="mt-2 text-sm text-black/88">Work together and post one strong move per round.</p>
+            <p className="mt-2 text-base text-black/88">Work together and post one strong move per round.</p>
           </div>
           <div className="neo-panel-soft p-4">
             <p className="neo-label text-black/78">The Twist</p>
-            <p className="mt-2 text-sm text-black/88">Every faction wants the public mood to land in different places.</p>
+            <p className="mt-2 text-base text-black/88">Every faction wants the public mood to land in different places.</p>
           </div>
           <div className="neo-panel-soft p-4">
             <p className="neo-label text-black/78">Host Cue</p>
-            <p className="mt-2 text-sm text-black/88">Start round one when the room is ready to craft their spin.</p>
+            <p className="mt-2 text-base text-black/88">Start round one when the room is ready to craft their spin.</p>
           </div>
         </div>
       </CardContent>

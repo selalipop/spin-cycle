@@ -11,7 +11,7 @@ import { PageShell } from '~/components/lobby/page-shell'
 import { PlayerListItem } from '~/components/lobby/player-list-item'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { Spinner } from '~/components/ui/spinner'
 import { getFactionTheme } from '~/lib/factions'
 
@@ -146,7 +146,7 @@ function HostWaitingRoom() {
     void processRoundSubmissions({
       gameId: roundState.gameId,
     }).catch(() => {
-      setError('Could not score submissions. Please refresh.')
+      setError('Round processing failed. Please refresh to retry.')
     })
   }, [processRoundSubmissions, roundState])
 
@@ -197,7 +197,7 @@ function HostWaitingRoom() {
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/90">Loading host dashboard...</p>
+            <p className="text-base text-black/90">Loading host dashboard...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -209,9 +209,9 @@ function HostWaitingRoom() {
       <PageShell title="Room Not Found" subtitle="This host link is invalid or expired.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/90">Start a new game from the home screen.</p>
+            <p className="text-base text-black/90">Start a new game from the home screen.</p>
             <Button
-              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-10 border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
               type="button"
             >
@@ -235,9 +235,6 @@ function HostWaitingRoom() {
           <Card className="neo-panel neo-grid gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Control Desk</CardTitle>
-              <CardDescription className="text-black/90">
-                Continue when the clip and story brief are complete.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <div className="space-y-1">
@@ -247,7 +244,7 @@ function HostWaitingRoom() {
 
 
               <Button
-                className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+                className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
                 disabled={isStarting || !canStartRoundOne}
                 onClick={handleStart}
                 type="button"
@@ -262,13 +259,13 @@ function HostWaitingRoom() {
               </Button>
 
               {videoFailed ? (
-                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black">
+                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
                   Intro clip failed to load. You can still continue.
                 </Badge>
               ) : null}
 
               {error ? (
-                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
                   {error}
                 </Badge>
               ) : null}
@@ -299,9 +296,6 @@ function HostWaitingRoom() {
           <Card className="neo-panel neo-grid gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Join Here!</CardTitle>
-              <CardDescription className="text-black/90">
-                Share this code or QR so everyone can join.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <p className="neo-code text-5xl font-semibold text-black">{lobby.joinCode}</p>
@@ -322,7 +316,7 @@ function HostWaitingRoom() {
               ) : null}
 
               <Button
-                className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+                className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
                 disabled={isStarting}
                 onClick={handleStart}
                 type="button"
@@ -331,7 +325,7 @@ function HostWaitingRoom() {
               </Button>
 
               {error ? (
-                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
                   {error}
                 </Badge>
               ) : null}
@@ -341,7 +335,7 @@ function HostWaitingRoom() {
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Your Teams</CardTitle>
-       
+
             </CardHeader>
             <CardContent className="grid gap-4 pb-2 md:grid-cols-2">
               {lobby.factions.map((faction) => (
@@ -356,7 +350,7 @@ function HostWaitingRoom() {
                   {faction.players.length === 0 ? (
                     <Card className="neo-panel-soft py-0">
                       <CardContent className="px-4 py-3">
-                        <p className="text-sm text-black/82">No players yet.</p>
+                        <p className="text-base text-black/82">No players yet.</p>
                       </CardContent>
                     </Card>
                   ) : (
@@ -375,11 +369,11 @@ function HostWaitingRoom() {
 
   if (roundState === undefined) {
     return (
-      <PageShell title="Loading Round" subtitle="Pulling current round status.">
+      <PageShell title="Loading Round">
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/90">Loading round data...</p>
+            <p className="text-base text-black/90">Loading round data...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -388,12 +382,12 @@ function HostWaitingRoom() {
 
   if (roundState === null) {
     return (
-      <PageShell title="Room Not Found" subtitle="No active game for this host link.">
+      <PageShell title="Room Not Found">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/90">Try creating a new game from the homepage.</p>
+            <p className="text-base text-black/90">Try creating a new game from the homepage.</p>
             <Button
-              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-10 border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
               type="button"
             >
@@ -409,30 +403,26 @@ function HostWaitingRoom() {
     return (
       <PageShell
         eyebrow="Main Display"
-        subtitle="Briefings are being prepared for each faction."
         title={`Round ${roundState.roundNumber ?? 1}: Briefings Incoming`}
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Round Status</CardTitle>
-              <CardDescription className="text-black/90">
-                Teams unlock once their briefings are ready.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <div className="neo-panel-soft p-4">
                 <p className="neo-label text-black/78">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
+                <p className="mt-2 text-base leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
               <Badge
                 className={
                   planningStatus === 'ready'
-                    ? 'w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-[0.68rem] text-black'
+                    ? 'w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs text-black'
                     : planningStatus === 'error'
-                      ? 'w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground'
-                      : 'w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black'
+                      ? 'w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground'
+                      : 'w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black'
                 }
               >
                 {planningStatus === 'ready'
@@ -455,8 +445,8 @@ function HostWaitingRoom() {
                       <Badge
                         className={
                           faction.hasBriefing
-                            ? 'rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
-                            : 'rounded-full border border-black bg-white px-2 py-0.5 text-[0.62rem] uppercase text-black'
+                            ? 'rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-xs uppercase text-black'
+                            : 'rounded-full border border-black bg-white px-2 py-0.5 text-xs uppercase text-black'
                         }
                       >
                         {faction.hasBriefing ? 'Ready' : 'Pending'}
@@ -472,7 +462,7 @@ function HostWaitingRoom() {
         </section>
 
         {error ? (
-          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
             {error}
           </Badge>
         ) : null}
@@ -487,16 +477,12 @@ function HostWaitingRoom() {
     return (
       <PageShell
         eyebrow="Main Display"
-        subtitle="Teams are crafting one move each before the timer ends."
         title={`Round ${roundState.roundNumber ?? 1}: Teams Are Crafting`}
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Round Clock</CardTitle>
-              <CardDescription className="text-black/90">
-                The round advances when all teams lock in or time runs out.
-              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 pb-2">
@@ -507,10 +493,10 @@ function HostWaitingRoom() {
 
               <div className="neo-panel-soft p-4">
                 <p className="neo-label text-black/78">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
+                <p className="mt-2 text-base leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
-              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
+              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
                 {roundState.submittedFactionCount}/{roundState.participatingFactionCount} factions locked
               </Badge>
             </CardContent>
@@ -522,9 +508,6 @@ function HostWaitingRoom() {
         <Card className="neo-panel gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Faction Status</CardTitle>
-            <CardDescription className="text-black/90">
-              First valid move locks each faction for the round.
-            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 pb-2 md:grid-cols-2 lg:grid-cols-4">
             {roundState.factions.map((faction) => {
@@ -537,13 +520,13 @@ function HostWaitingRoom() {
                     <Badge
                       className={
                         faction.submitted
-                          ? 'w-fit rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
-                          : 'w-fit rounded-full border border-black bg-amber-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
+                          ? 'w-fit rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-xs uppercase text-black'
+                          : 'w-fit rounded-full border border-black bg-amber-300 px-2 py-0.5 text-xs uppercase text-black'
                       }
                     >
                       {faction.submitted ? 'Locked In' : 'Waiting'}
                     </Badge>
-                    <p className="text-xs text-black/92">
+                    <p className="text-sm text-black/92">
                       {faction.playerCount} player{faction.playerCount === 1 ? '' : 's'}
                     </p>
                   </CardContent>
@@ -554,7 +537,7 @@ function HostWaitingRoom() {
         </Card>
 
         {error ? (
-          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
             {error}
           </Badge>
         ) : null}
@@ -566,11 +549,10 @@ function HostWaitingRoom() {
     return (
       <PageShell
         eyebrow="Main Display"
-        subtitle="Moves are locked. We are scoring the narrative impact."
         title={`Round ${roundState.roundNumber ?? 1}: Scoring the Spin`}
       >
         <PhaseHoldingScreen
-          description="Stand by while outcomes are calculated for every faction move."
+          description="Scoring all moves..."
           label="Scoring The Spin"
           title="Crunching Results"
         />
@@ -580,80 +562,197 @@ function HostWaitingRoom() {
 
   if (roundState.phase === 'round_results') {
     const factionNameById = new Map(roundState.factions.map((faction) => [faction.id, faction.name]))
+    const sentimentBefore = roundState.sentimentBefore
+    const sentimentAfter = roundState.sentimentAfter
+    const latestSentiments = sentimentAfter ?? roundState.sentiments
+    const rankedSubmissions = roundState.submittedActions
+      .slice()
+      .sort((a, b) => {
+        const aImpact = typeof a.impact === 'number' ? a.impact : Number.NEGATIVE_INFINITY
+        const bImpact = typeof b.impact === 'number' ? b.impact : Number.NEGATIVE_INFINITY
+
+        if (aImpact !== bImpact) {
+          return bImpact - aImpact
+        }
+
+        return a.createdAtMs - b.createdAtMs
+      })
+    const sentimentDeltaRows =
+      sentimentBefore && sentimentAfter
+        ? [
+          {
+            label: 'Stability',
+            delta: sentimentAfter.stability - sentimentBefore.stability,
+          },
+          {
+            label: 'Attention',
+            delta: sentimentAfter.attention - sentimentBefore.attention,
+          },
+          {
+            label: 'Curiosity',
+            delta: sentimentAfter.curiosity - sentimentBefore.curiosity,
+          },
+          {
+            label: 'Corporate Blame',
+            delta: sentimentAfter.corporate_blame - sentimentBefore.corporate_blame,
+          },
+          {
+            label: 'Government Blame',
+            delta: sentimentAfter.government_blame - sentimentBefore.government_blame,
+          },
+        ]
+        : []
 
     return (
       <PageShell
         eyebrow="Main Display"
-        subtitle="Scoring is complete. Here is how each faction performed."
+        subtitle="Scoring and world resolution are complete."
         title={`Round ${roundState.roundNumber ?? 1}: Results`}
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Round Snapshot</CardTitle>
-              <CardDescription className="text-black/90">
-                Finalized scores for this round&apos;s submissions.
-              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <div className="neo-panel-soft p-4">
                 <p className="neo-label text-black/78">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
+                <p className="mt-2 text-base leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
-              <Badge className="w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-[0.68rem] text-black">
+              <Badge className="w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs text-black">
                 {roundState.submittedActions.length} submissions scored
               </Badge>
+              {roundState.winningSubmissionId ? (
+                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
+                  Winning move resolved
+                </Badge>
+              ) : null}
             </CardContent>
           </Card>
 
-          <SentimentBars sentiments={roundState.sentiments} />
+          <div className="grid gap-4">
+            <SentimentBars sentiments={latestSentiments} title="Latest Sentiment" />
+            {sentimentDeltaRows.length > 0 ? (
+              <Card className="neo-panel gap-3 py-4">
+                <CardHeader className="gap-1 pb-0">
+                  <CardTitle className="font-heading text-xl text-black">Movement</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2 pb-2">
+                  {sentimentDeltaRows.map((row) => {
+                    const roundedDelta = Math.round(row.delta * 10) / 10
+                    const deltaLabel =
+                      roundedDelta > 0
+                        ? `↑ +${roundedDelta}`
+                        : roundedDelta < 0
+                          ? `↓ ${roundedDelta}`
+                          : '→ 0'
+                    const toneClass =
+                      roundedDelta > 0
+                        ? 'bg-emerald-200 text-emerald-900'
+                        : roundedDelta < 0
+                          ? 'bg-rose-200 text-rose-900'
+                          : 'bg-white text-black'
+
+                    return (
+                      <Badge
+                        className={`rounded-full border border-black px-3 py-1 text-xs ${toneClass}`}
+                        key={row.label}
+                      >
+                        {row.label}: {deltaLabel}
+                      </Badge>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
         </section>
 
-        <section className="grid gap-3 md:grid-cols-2">
-          {roundState.submittedActions.map((submission) => (
-            <Card className="neo-panel gap-4 py-4" key={submission.id}>
-              <CardHeader className="gap-2 pb-0">
-                <CardTitle className="font-heading text-xl text-black">
-                  {factionNameById.get(submission.factionId) ?? 'Unknown Faction'}
-                </CardTitle>
-                <CardDescription className="text-black/90">{submission.actionName}</CardDescription>
-              </CardHeader>
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-2 pb-0">
+              <CardTitle className="font-heading text-xl text-black">Winning Narrative</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-2">
+              {roundState.narrative ? (
+                <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
+                  {roundState.narrative}
+                </p>
+              ) : (
+                <p className="text-base text-black/82">Narrative not available for this round.</p>
+              )}
+            </CardContent>
+          </Card>
 
-              <CardContent className="space-y-3 pb-2">
-                <div className="neo-panel-soft p-3">
-                  <p className="neo-label text-black/78">Submission</p>
-                  <p className="mt-2 text-sm text-black/92">{submission.content}</p>
-                </div>
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-2 pb-0">
+              <CardTitle className="font-heading text-xl text-black">Escalation</CardTitle>
+            </CardHeader>
+            <CardContent className="pb-2">
+              {roundState.escalation ? (
+                <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
+                  {roundState.escalation}
+                </p>
+              ) : (
+                <p className="text-base text-black/82">Escalation not available for this round.</p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge className="rounded-full border border-black bg-white px-2 py-1 text-[0.64rem] text-black">
-                    Effectiveness: {submission.effectiveness ?? 0}
-                  </Badge>
-                  <Badge className="rounded-full border border-black bg-amber-300 px-2 py-1 text-[0.64rem] text-black">
-                    Impact: {submission.impact ?? 0}
-                  </Badge>
-                </div>
-
-                <div className="space-y-2">
-                  <p className="neo-label text-black/78">Grading Rubric</p>
-                  {submission.gradingRubric && Object.keys(submission.gradingRubric).length > 0 ? (
-                    Object.entries(submission.gradingRubric).map(([criterion, score]) => (
-                      <div
-                        className="neo-panel-soft flex items-center justify-between px-3 py-2"
-                        key={`${submission.id}:${criterion}`}
-                      >
-                        <p className="text-sm text-black/90">{criterion}</p>
-                        <p className="font-mono text-xs text-black">{score}</p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-sm text-black/82">No rubric scores available.</p>
-                  )}
-                </div>
+        <section className="space-y-3">
+          {rankedSubmissions.length === 0 ? (
+            <Card className="neo-panel gap-3 py-4">
+              <CardContent className="pb-2">
+                <p className="text-base text-black/82">No team submissions were available for this round.</p>
               </CardContent>
             </Card>
-          ))}
+          ) : (
+            rankedSubmissions.map((submission, index) => (
+              <div className="flex items-stretch gap-3" key={submission.id}>
+                <div className="neo-panel-soft flex w-16 shrink-0 items-center justify-center px-2 py-3">
+                  <span className="font-display text-6xl leading-none text-black/35">{index + 1}</span>
+                </div>
+
+                <Card
+                  className={
+                    submission.id === roundState.winningSubmissionId
+                      ? 'neo-panel flex-1 gap-4 border-2 border-black bg-amber-50 py-4'
+                      : 'neo-panel flex-1 gap-4 py-4'
+                  }
+                >
+                  <CardHeader className="gap-2 pb-0">
+                    <CardTitle className="font-heading text-xl text-black">
+                      {factionNameById.get(submission.factionId) ?? 'Unknown Faction'}
+                    </CardTitle>
+                    <p className="text-base text-black/90">{submission.actionName}</p>
+                    {submission.id === roundState.winningSubmissionId ? (
+                      <Badge className="w-fit rounded-full border border-black bg-amber-300 px-2 py-0.5 text-xs text-black">
+                        Winning Move
+                      </Badge>
+                    ) : null}
+                  </CardHeader>
+
+                  <CardContent className="space-y-3 pb-2">
+                    <div className="neo-panel-soft p-3">
+                      <p className="neo-label text-black/78">Submission</p>
+                      <p className="mt-2 text-base text-black/92">{submission.content}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="rounded-full border border-black bg-white px-2 py-1 text-xs text-black">
+                        Effectiveness: {submission.effectiveness ?? 0}
+                      </Badge>
+                      <Badge className="rounded-full border border-black bg-amber-300 px-2 py-1 text-xs text-black">
+                        Impact: {submission.impact ?? 0}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ))
+          )}
         </section>
       </PageShell>
     )
@@ -662,13 +761,13 @@ function HostWaitingRoom() {
   return (
     <PageShell
       eyebrow="Main Display"
-      subtitle="The next broadcast segment is not built yet."
+      subtitle="Waiting for the next round."
       title="Intermission"
     >
       <Card className="neo-panel py-0">
         <CardContent className="space-y-3 px-6 py-6">
-          <p className="text-sm text-black/90">
-            Gameplay after this stage is still under construction.
+          <p className="text-base text-black/90">
+            The host will kick off what's next.
           </p>
         </CardContent>
       </Card>

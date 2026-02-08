@@ -99,7 +99,7 @@ function JoinGamePage() {
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/90">Looking up code {normalizedJoinCode}...</p>
+            <p className="text-base text-black/90">Looking up code {normalizedJoinCode}...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -111,9 +111,9 @@ function JoinGamePage() {
       <PageShell title="Room Not Found" subtitle="This code does not match an active room.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/90">No game exists for code {normalizedJoinCode}.</p>
+            <p className="text-base text-black/90">No game exists for code {normalizedJoinCode}.</p>
             <Button
-              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-10 border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
               type="button"
             >
@@ -128,7 +128,7 @@ function JoinGamePage() {
   return (
     <PageShell
       eyebrow={`Code ${game.joinCode}`}
-      subtitle="Pick your name, avatar, and faction before round one starts."
+      subtitle="Get ready for round one."
       title="Join Spin Cycle"
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
@@ -136,7 +136,7 @@ function JoinGamePage() {
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Player Setup</CardTitle>
             <CardDescription className="text-black/90">
-              This is your identity for the whole match.
+              This is you for the game.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-2">
@@ -152,7 +152,7 @@ function JoinGamePage() {
             <AvatarPicker onChange={setAvatar} value={avatar} />
 
             <Button
-              className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
               disabled={isJoining || !selectedFactionId || game.phase !== 'game_lobby'}
               onClick={handleJoin}
               type="button"
@@ -161,13 +161,13 @@ function JoinGamePage() {
             </Button>
 
             {game.phase !== 'game_lobby' ? (
-              <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black">
+              <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
                 Host already started this room.
               </Badge>
             ) : null}
 
             {error ? (
-              <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+              <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
                 {error}
               </Badge>
             ) : null}
@@ -178,7 +178,7 @@ function JoinGamePage() {
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Choose Your Faction</CardTitle>
             <CardDescription className="text-black/90">
-              Every faction wants public sentiment to land in different places.
+              Each faction has a different angle.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3 pb-2 md:grid-cols-2">
