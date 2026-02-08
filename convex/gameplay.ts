@@ -27,7 +27,7 @@ import {
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel'
 
-const DEFAULT_OPENROUTER_MODEL = 'mistralai/mistral-small-creative'
+const DEFAULT_OPENROUTER_MODEL = 'google/gemini-3-flash-preview'
 const ROUND_INTRO_VIDEO_ENDPOINT = 'xai/grok-imagine-video/text-to-video'
 const ROUND_INTRO_VIDEO_DURATION_SECONDS = 10
 const ROUND_INTRO_VIDEO_ASPECT_RATIO = '16:9'
