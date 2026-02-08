@@ -502,21 +502,20 @@ function HostWaitingRoom() {
                 <p className="mt-2 text-base leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
-              <Badge
-                className={
-                  planningStatus === 'ready'
-                    ? 'w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs text-black'
-                    : planningStatus === 'error'
-                      ? 'w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground'
-                      : 'w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black'
-                }
-              >
-                {planningStatus === 'ready'
-                  ? 'All briefings ready'
-                  : planningStatus === 'error'
-                    ? 'Briefing generation failed'
-                    : 'Generating briefings...'}
-              </Badge>
+              {planningStatus === 'ready' ? (
+                <Badge className="w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs text-black">
+                  All briefings ready
+                </Badge>
+              ) : planningStatus === 'error' ? (
+                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
+                  Briefing generation failed
+                </Badge>
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-4">
+                  <WashingMachineLoader />
+                  <p className="text-sm text-black/60">Generating briefings...</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 {roundState.factions.map((faction) => {

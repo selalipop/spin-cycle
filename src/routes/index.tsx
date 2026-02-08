@@ -49,8 +49,6 @@ function Home() {
 
   return (
     <PageShell
-      subtitle="Shape the narrative. Control the spin."
-      title="Are you ready to spin?"
     >
       <HomeTitleRibbon />
 
@@ -65,6 +63,8 @@ function Home() {
               Set up a room and run the show.
             </CardDescription>
           </CardHeader>
+          <img src="/public/splash.png" alt="Spin Cycle Logo" className="w-full max-w-120 mx-auto" />
+
           <CardContent className="space-y-4 pb-2">
             <Button
               className="h-12 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"

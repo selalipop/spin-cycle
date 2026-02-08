@@ -698,7 +698,7 @@ function chooseScenario(): {
     }
   }
 
-  if ((globalThis as any).process?.env?.NODE_ENV === 'development') {
+  if ((globalThis as any).process?.env?.NODE_ENV === 'development' || true) {
     const scenario = SCENARIOS.find((candidate) => candidate.id === 'raccoon_bank') as {
       id: string
       title: string
