@@ -1,0 +1,61 @@
+code: the_institute
+name: The Institute
+description: Experts pushing calm, controlled messaging.
+archetype: >-
+  Academic and technocratic. Calm, data-heavy, and authority-first.
+  Prioritizes order and trust in institutions.
+scoring:
+  stability: [-3, -1, 2, 5]
+  attention: [-1, 1, 2, 3]
+  curiosity: [-2, -1, 1, 3]
+  corporate_blame: [2, 1, -1, -3]
+  government_blame: [2, 1, -1, -4]
+faction_actions:
+  - id: expert_panel
+    name: Expert Panel
+    cost: 2
+    prompt: Draft the panel talking points.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Authority
+        description: Expert voice feels credible.
+        ai_scoring_instructions: Reward institutional expertise and confidence.
+      - name: Reassurance
+        description: Calms the audience.
+        ai_scoring_instructions: Reward confidence-building framing.
+      - name: Specificity
+        description: Contains concrete details.
+        ai_scoring_instructions: Reward concrete, verifiable details.
+  - id: release_whitepaper
+    name: Release Whitepaper
+    cost: 3
+    prompt: Write the headline thesis of your emergency whitepaper.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Depth
+        description: Substance over slogans.
+        ai_scoring_instructions: Reward nuanced and technical content.
+      - name: Coherence
+        description: Argument is internally consistent.
+        ai_scoring_instructions: Reward logical structure and rigor.
+      - name: Policy Utility
+        description: Supports decisive action.
+        ai_scoring_instructions: Reward actionable recommendations.
+  - id: declare_consensus
+    name: Declare Scientific Consensus
+    cost: 4
+    prompt: Make the definitive consensus announcement.
+    repeatable: false
+    is_special: true
+    scoring_criteria:
+      - name: Finality
+        description: Feels definitive.
+        ai_scoring_instructions: Reward decisive and complete framing.
+      - name: Legitimacy
+        description: Feels institutionally grounded.
+        ai_scoring_instructions: Reward reference to methods and consensus.
+      - name: Narrative Control
+        description: Re-centers the story.
+        ai_scoring_instructions: Reward framing that stabilizes discourse.

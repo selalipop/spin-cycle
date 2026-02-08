@@ -88,21 +88,34 @@ export default defineSchema({
     /** 4-6 character uppercase code players type on their phone. */
     join_code: v.string(),
 
-    /** The seed event, e.g. "A sinkhole opens in the financial district..." */
+    /** The seed event, e.g. "A second Golden Gate Bridge appeared overnight..." */
     event: v.string(),
 
     /** How many rounds. Default 4. */
     max_rounds: v.number(),
 
-    /** 0 = lobby, 1-4 = which round we're in */
-    current_round: v.number(),
+    /**
+     * Which round is currently active (1-based). Missing means no round has
+     * started yet (lobby + establishing).
+     */
+    current_round: v.optional(v.number()),
 
     /**
      * State machine phase:
-     * lobby → planning → submitting → resolving → results → planning... → game_over
+     * lobby → establishing → planning → submitting → resolving → results
+     *   → planning... → game_over
+     *
+     * - lobby: players joining, picking factions
+     * - establishing: host introduces the premise before round 1 starts
+     * - planning: players see sentiments, credits, goals, briefings, pick an action
+     * - submitting: players write content for their chosen action
+     * - resolving: AI is crunching — no player input, big screen shows loading
+     * - results: big screen shows the news cycle, sentiments animate, scores update
+     * - game_over: final scores, epilogue, winner
      */
     phase: v.union(
       v.literal("lobby"),
+      v.literal("establishing"),
       v.literal("planning"),
       v.literal("submitting"),
       v.literal("resolving"),
@@ -129,10 +142,11 @@ export default defineSchema({
   // ===========================================================================
   // FACTIONS — always exactly 4 per game
   //
-  // The Institute: academic, expert, wants boring calm
-  // Crowdswell: populist, grassroots, "just asking questions"
-  // Pinnacle Media Group: engagement-brained, clicks and views
-  // The Foundation for Public Good: EA-flavored, paternalistic, corporate
+  // The Institute: eerily calm, sanitized, GSK/Purdue energy. Wants boring.
+  // Crowdswell: disorganized, Area 51, Alex Jones/Joe Rogan energy. Sells merch.
+  // Pinnacle Media Group: bombastic, Ted Turner, engagement-brained. Wants eyeballs.
+  // The Foundation for Public Good: EA-flavored, talks like Swedes, paternalistic.
+  //   Preaches safety while grabbing power.
   // ===========================================================================
   factions: defineTable({
     game_id: v.id("games"),
@@ -144,8 +158,9 @@ export default defineSchema({
 
     /**
      * Full personality description used in AI prompts.
-     * Describes voice, motivations, media style. This is what makes
-     * the same action come out differently for each faction.
+     * Describes voice, motivations, media style, selfish goals.
+     * This is what makes the same action come out differently for each faction
+     * and what drives the AI to generate briefings in the right voice.
      */
     archetype: v.string(),
 
@@ -214,10 +229,29 @@ export default defineSchema({
 
     /**
      * What actually happened in the world this round, e.g.
-     * "Day 3: The glow is getting brighter. A perimeter has been established."
-     * Round 1 = the initial event. Later rounds the AI advances the story.
+     * "Day 2: 50,000 people drove across the new bridge. Yelp reviews
+     *  are appearing. 4.8 stars."
+     *
+     * Round 1 = the initial event description.
+     * Later rounds: AI advances the "ground truth," bent by whoever
+     * won the previous round (see reality_shaped_by).
      */
     event_development: v.string(),
+
+    /**
+     * Which faction's narrative goal shaped THIS round's event_development.
+     * Null for round 1 (no previous winner yet).
+     *
+     * The winning faction from last round doesn't literally get their goal,
+     * but the AI bends reality in their direction. If Crowdswell won last
+     * round wanting "evidence someone knew," a suspicious document might
+     * surface. If the Institute won wanting "boring explanation," a
+     * credible mundane theory gains traction.
+     *
+     * The story ALWAYS escalates — even an Institute win doesn't de-escalate,
+     * it just makes the Institute more powerful within a still-crazy situation.
+     */
+    reality_shaped_by: v.optional(v.id("factions")),
 
     /** Sentiment snapshot BEFORE this round's actions */
     sentiment_before: sentiments,
@@ -235,7 +269,8 @@ export default defineSchema({
     /**
      * Who earned bonus credits this round. Null until resolving completes.
      * - quality: factions that had at least one action score effectiveness >= 7
-     * - highest_impact: the single faction with highest sum(cost * effectiveness)
+     * - highest_impact: the single faction with highest impact
+     *   (impact = cost × effectiveness)
      */
     credit_bonuses: v.optional(
       v.object({
@@ -244,32 +279,51 @@ export default defineSchema({
       }),
     ),
 
-     /**
+    /**
      * Per-faction briefing and goal for this round.
      * AI-generated based on faction archetype + current game state.
      *
-     * - goal: one sentence, always visible. The CTA.
+     * - goal: one sentence, always visible at top of phone screen. The CTA.
      *   e.g. "Make the public believe the bridge is mundane engineering"
      * - briefing: 3-5 sentences in the faction's voice. Flavorful,
-     *   reveals their selfish motivations, gives strategic context.
-     *   Expandable on the phone UI, optional reading.
+     *   reveals their selfish motivations, references current events in-game.
+     *   Expandable on the phone UI, optional reading but very fun.
+     *
+     * Example Institute goal: "Get CalTrans to require your safety audit"
+     * Example Institute briefing: "Team, this is a Code Beige. The bridge is
+     *   structurally identical to the original — our materials people confirmed
+     *   the alloy composition in an hour. That's GOOD. That means it's
+     *   explainable. CalTrans has a consulting RFP opening in March and we
+     *   need to be the ones they call. KEEP. IT. BORING."
      */
-     faction_briefs: v.record(
+    faction_briefs: v.record(
       v.id("factions"),
       v.object({
         goal: v.string(),
         briefing: v.string(),
       }),
     ),
+
+    /**
+     * Tracks which factions have submitted their action(s) this round.
+     * Used to determine when to transition from submitting → resolving.
+     *
+     * Currently the game expects 1 action per faction per round,
+     * but this isn't hardcoded — we just check that every faction
+     * has at least one submitted action before resolving.
+     */
+    faction_submitted: v.record(v.id("factions"), v.boolean()),
   }).index("by_game_and_number", ["game_id", "number"]),
 
   // ===========================================================================
   // SUBMITTED ACTIONS — every action a faction takes in a round
   //
+  // Currently 1 per faction per round, but the schema supports more.
+  //
   // Lifecycle:
-  // PLANNING phase:  player picks actions → row created, content is empty
+  // PLANNING phase:  player picks an action → row created with empty content
   // SUBMITTING phase: player writes content → content filled in
-  // RESOLVING phase:  AI grades it → effectiveness, grading_rubric, impact filled in
+  // RESOLVING phase:  AI grades it → effectiveness, grading_rubric, impact
   // ===========================================================================
   submitted_actions: defineTable({
     game_id: v.id("games"),
@@ -278,7 +332,8 @@ export default defineSchema({
 
     /**
      * Which action this is (e.g. "social_media_post", "whistleblower").
-     * References an action type ID from game.shared_actions or faction.faction_actions.
+     * References an action type ID from game.shared_actions or
+     * faction.faction_actions.
      */
     action_type_id: v.string(),
 

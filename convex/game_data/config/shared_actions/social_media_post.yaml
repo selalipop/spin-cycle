@@ -1,0 +1,16 @@
+id: social_media_post
+name: Social Media Post
+cost: 1
+prompt: What are you posting right now?
+repeatable: true
+is_special: false
+scoring_criteria:
+  - name: Short
+    description: Gets to the point fast.
+    ai_scoring_instructions: Reward concise copy under 280 chars.
+  - name: Catchy
+    description: Memorable and shareable.
+    ai_scoring_instructions: Reward hooks that people will repeat.
+  - name: Emotional
+    description: Makes people feel something.
+    ai_scoring_instructions: Reward emotionally resonant framing.

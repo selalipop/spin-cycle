@@ -1,0 +1,61 @@
+code: pinnacle_media_group
+name: Pinnacle Media Group
+description: Engagement-maxing media pros chasing the biggest story.
+archetype: >-
+  Ratings-obsessed media machine. Sensational framing, cliffhangers,
+  and relentless audience capture.
+scoring:
+  stability: [3, 1, -1, -2]
+  attention: [-4, -1, 3, 5]
+  curiosity: [-2, 1, 3, 5]
+  corporate_blame: [1, 2, 2, 3]
+  government_blame: [1, 2, 2, 3]
+faction_actions:
+  - id: breaking_banner
+    name: Breaking Banner
+    cost: 2
+    prompt: Write the lower-third breaking banner.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Urgency
+        description: Feels immediate.
+        ai_scoring_instructions: Reward high urgency without gibberish.
+      - name: Clarity
+        description: Understood at a glance.
+        ai_scoring_instructions: Reward short, punchy, clear wording.
+      - name: Hook
+        description: Makes people stay tuned.
+        ai_scoring_instructions: Reward curiosity-inducing framing.
+  - id: exclusive_segment
+    name: Exclusive Segment
+    cost: 3
+    prompt: Pitch the tease for your exclusive segment.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Exclusivity
+        description: Feels like must-watch access.
+        ai_scoring_instructions: Reward unique value and rarity cues.
+      - name: Drama
+        description: Heightens stakes.
+        ai_scoring_instructions: Reward emotionally charged storytelling.
+      - name: Retention
+        description: Keeps viewers around.
+        ai_scoring_instructions: Reward episodic, cliffhanger cadence.
+  - id: prime_time_takedown
+    name: Prime Time Takedown
+    cost: 4
+    prompt: Write your prime-time opener for a devastating exposé.
+    repeatable: false
+    is_special: true
+    scoring_criteria:
+      - name: Cinematic
+        description: Feels huge and polished.
+        ai_scoring_instructions: Reward vivid, high-production language.
+      - name: Narrative Dominance
+        description: Defines the story frame.
+        ai_scoring_instructions: Reward framing that sets agenda for others.
+      - name: Virality
+        description: Clips will spread everywhere.
+        ai_scoring_instructions: Reward quotable lines and shareability.

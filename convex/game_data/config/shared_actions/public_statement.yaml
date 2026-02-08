@@ -1,0 +1,16 @@
+id: public_statement
+name: Public Statement
+cost: 1
+prompt: What is your official statement?
+repeatable: true
+is_special: false
+scoring_criteria:
+  - name: Clear
+    description: Easy to understand.
+    ai_scoring_instructions: Reward plain language and unambiguous claims.
+  - name: Credible
+    description: Sounds trustworthy.
+    ai_scoring_instructions: Reward details, accountability, and confidence.
+  - name: Strategic
+    description: Helps your faction goals.
+    ai_scoring_instructions: Reward framing that advances faction interests.

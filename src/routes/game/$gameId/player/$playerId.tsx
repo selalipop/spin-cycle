@@ -76,9 +76,13 @@ function PlayerWaitingRoom() {
             </Chip>
             {playerState.phase === 'lobby' ? (
               <p className="text-sm text-zinc-300">Waiting for host to start...</p>
+            ) : playerState.phase === 'establishing' ? (
+              <Chip className="bg-amber-600/25 text-amber-200">
+                Host is establishing the premise...
+              </Chip>
             ) : (
               <Chip className="bg-emerald-600/25 text-emerald-200">
-                Host started the game. Round screen coming next.
+                Round 1 is live. Gameplay screen coming next.
               </Chip>
             )}
           </Card.Content>

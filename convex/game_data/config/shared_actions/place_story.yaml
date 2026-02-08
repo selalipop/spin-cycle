@@ -1,0 +1,16 @@
+id: place_story
+name: Place a Story
+cost: 2
+prompt: Pitch the story angle you are placing with media outlets.
+repeatable: false
+is_special: false
+scoring_criteria:
+  - name: Angle
+    description: Has a sharp narrative frame.
+    ai_scoring_instructions: Reward coherent and distinct story angles.
+  - name: Plausible
+    description: Could realistically spread.
+    ai_scoring_instructions: Reward realistic sourcing and tone.
+  - name: Impactful
+    description: Would move public sentiment.
+    ai_scoring_instructions: Reward likely public effect and scale.

@@ -1,0 +1,16 @@
+id: anonymous_leak
+name: Anonymous Leak
+cost: 3
+prompt: What is being leaked, and why will people believe it?
+repeatable: false
+is_special: false
+scoring_criteria:
+  - name: Explosive
+    description: Feels consequential.
+    ai_scoring_instructions: Reward revelations with clear stakes.
+  - name: Believable
+    description: Passes a smell test.
+    ai_scoring_instructions: Reward specific, plausible supporting details.
+  - name: Viral Potential
+    description: Likely to spread fast.
+    ai_scoring_instructions: Reward content that news/social will amplify.

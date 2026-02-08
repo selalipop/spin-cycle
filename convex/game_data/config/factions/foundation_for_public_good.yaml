@@ -1,0 +1,61 @@
+code: foundation_for_public_good
+name: The Foundation for Public Good
+description: Well-funded pragmatists steering order through policy optics.
+archetype: >-
+  Polished, philanthropic, and paternalistic. Uses institutional partnerships
+  and benevolent framing to direct outcomes.
+scoring:
+  stability: [-2, 1, 3, 5]
+  attention: [2, 2, 1, -1]
+  curiosity: [3, 1, -1, -2]
+  corporate_blame: [4, 2, -1, -3]
+  government_blame: [4, 2, -1, -3]
+faction_actions:
+  - id: fund_rapid_response
+    name: Fund Rapid Response
+    cost: 2
+    prompt: Announce your immediate intervention grant.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Competence
+        description: Feels operationally credible.
+        ai_scoring_instructions: Reward concrete logistics and realism.
+      - name: Goodwill
+        description: Feels publicly beneficial.
+        ai_scoring_instructions: Reward prosocial, reassuring framing.
+      - name: Control
+        description: Shows you are shaping events.
+        ai_scoring_instructions: Reward proactive command of the narrative.
+  - id: policy_alignment
+    name: Policy Alignment Brief
+    cost: 3
+    prompt: Write the key paragraph from your policy alignment brief.
+    repeatable: false
+    is_special: false
+    scoring_criteria:
+      - name: Institutional Fit
+        description: Matches official priorities.
+        ai_scoring_instructions: Reward policy-literate and aligned language.
+      - name: Pragmatism
+        description: Sounds implementable now.
+        ai_scoring_instructions: Reward feasible and concrete recommendations.
+      - name: Perception
+        description: Looks responsible and calm.
+        ai_scoring_instructions: Reward tone that signals measured leadership.
+  - id: national_reassurance_campaign
+    name: National Reassurance Campaign
+    cost: 4
+    prompt: Draft the campaign line everyone will hear tomorrow.
+    repeatable: false
+    is_special: true
+    scoring_criteria:
+      - name: Unity
+        description: Pulls the public together.
+        ai_scoring_instructions: Reward collective and de-polarizing language.
+      - name: Trust
+        description: Builds confidence in institutions.
+        ai_scoring_instructions: Reward consistent, credible framing.
+      - name: Narrative Closure
+        description: Feels like a path forward.
+        ai_scoring_instructions: Reward action-oriented, stabilizing direction.

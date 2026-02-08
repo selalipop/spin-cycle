@@ -15,6 +15,7 @@ function HostWaitingRoom() {
   const { gameId } = Route.useParams()
   const lobby = useQuery(api.lobby.getGameLobby, { gameId })
   const startGame = useMutation(api.lobby.startGame)
+  const startRoundOne = useMutation(api.lobby.startRoundOne)
 
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +37,7 @@ function HostWaitingRoom() {
   }, [joinUrl])
 
   const handleStart = async () => {
-    if (!lobby || lobby.phase !== 'lobby') {
+    if (!lobby) {
       return
     }
 
@@ -44,7 +45,11 @@ function HostWaitingRoom() {
     setIsStarting(true)
 
     try {
-      await startGame({ gameId: lobby.gameId })
+      if (lobby.phase === 'lobby') {
+        await startGame({ gameId: lobby.gameId })
+      } else if (lobby.phase === 'establishing') {
+        await startRoundOne({ gameId: lobby.gameId })
+      }
     } catch {
       setError('Could not start game. Please try again.')
       setIsStarting(false)
@@ -108,8 +113,18 @@ function HostWaitingRoom() {
             ) : null}
           </Card.Content>
           <Card.Footer className="flex flex-col items-stretch gap-3">
-            <Button className="w-full" isDisabled={isStarting || lobby.phase !== 'lobby'} onPress={handleStart}>
-              {lobby.phase === 'lobby' ? (isStarting ? 'Starting...' : 'Start Game') : 'Game Started'}
+            <Button
+              className="w-full"
+              isDisabled={isStarting || (lobby.phase !== 'lobby' && lobby.phase !== 'establishing')}
+              onPress={handleStart}
+            >
+              {isStarting
+                ? 'Starting...'
+                : lobby.phase === 'lobby'
+                  ? 'Start Establishing'
+                  : lobby.phase === 'establishing'
+                    ? 'Start Round 1'
+                    : 'Game Started'}
             </Button>
             <Chip className="bg-zinc-700/70 text-zinc-100">
               Phase: {lobby.phase}
