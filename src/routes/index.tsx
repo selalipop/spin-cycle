@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { HomeTitleRibbon } from '~/components/lobby/home-title-ribbon'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
@@ -48,10 +49,11 @@ function Home() {
 
   return (
     <PageShell
-      eyebrow="Spin Cycle"
       subtitle="A Jackbox-style party game where teams race to shape the story together."
-      title="Run the room. Bend the narrative."
+      title="Are you ready to spin?"
     >
+      <HomeTitleRibbon />
+
       <section className="grid gap-4 lg:grid-cols-2">
         <Card className="neo-panel neo-grid neo-tilt-left gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
@@ -59,12 +61,12 @@ function Home() {
               Host Screen
             </Badge>
             <CardTitle className="font-display text-3xl text-black">Start a Game</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               Create a fresh room and bring everyone in.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-2">
-            <p className="text-sm text-black/75">
+            <p className="text-sm text-black/90">
               You control the timer, the opening scene, and when each round begins.
             </p>
             <Button
@@ -84,7 +86,7 @@ function Home() {
               Phone Players
             </Badge>
             <CardTitle className="font-display text-3xl text-black">Join a Game</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               Enter the short code from the host screen.
             </CardDescription>
           </CardHeader>

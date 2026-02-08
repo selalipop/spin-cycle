@@ -175,7 +175,7 @@ function HostWaitingRoom() {
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/75">Loading host dashboard...</p>
+            <p className="text-sm text-black/90">Loading host dashboard...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -187,7 +187,7 @@ function HostWaitingRoom() {
       <PageShell title="Room Not Found" subtitle="This host link is invalid or expired.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/75">Start a new game from the home screen.</p>
+            <p className="text-sm text-black/90">Start a new game from the home screen.</p>
             <Button
               className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
@@ -207,26 +207,22 @@ function HostWaitingRoom() {
     return (
       <PageShell
         eyebrow="Main Display"
-        subtitle="Run the opening scene, then launch round one."
         title="Opening Scene"
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,320px)_1fr]">
           <Card className="neo-panel neo-grid gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Control Desk</CardTitle>
-              <CardDescription className="text-black/75">
+              <CardDescription className="text-black/90">
                 Continue when the clip and story brief are complete.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <div className="space-y-1">
-                <p className="neo-label text-black/60">Join Code</p>
+                <p className="neo-label text-black/78">Join Code</p>
                 <p className="neo-code text-4xl font-semibold text-black">{lobby.joinCode}</p>
               </div>
 
-              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
-                {lobby.totalPlayers} player{lobby.totalPlayers === 1 ? '' : 's'} connected
-              </Badge>
 
               <Button
                 className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
@@ -276,27 +272,21 @@ function HostWaitingRoom() {
   if (lobby.phase === 'game_lobby') {
     return (
       <PageShell
-        eyebrow="Host Console"
-        subtitle="Get players in, then start the opening scene."
-        title="Spin Cycle Lobby"
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
           <Card className="neo-panel neo-grid gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
-              <CardTitle className="font-display text-3xl text-black">Room Access</CardTitle>
-              <CardDescription className="text-black/75">
+              <CardTitle className="font-display text-3xl text-black">Join Here!</CardTitle>
+              <CardDescription className="text-black/90">
                 Share this code or QR so everyone can join.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <p className="neo-code text-5xl font-semibold text-black">{lobby.joinCode}</p>
 
-              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
-                {lobby.totalPlayers} player{lobby.totalPlayers === 1 ? '' : 's'} connected
-              </Badge>
 
               {joinUrl ? (
-                <p className="break-all rounded-xl border-2 border-black bg-white px-3 py-2 font-mono text-xs text-black/70" title={joinUrl}>
+                <p className="break-all rounded-xl border-2 border-black bg-white px-3 py-2 font-mono text-xs text-black/92" title={joinUrl}>
                   {joinUrl}
                 </p>
               ) : null}
@@ -304,7 +294,7 @@ function HostWaitingRoom() {
               {qrCodeUrl ? (
                 <img
                   alt="QR code for joining this game"
-                  className="mx-auto w-full max-w-[260px] rounded-xl border-2 border-black bg-white p-2"
+                  className="mx-auto w-full max-w-[200px] rounded-xl border-2 border-black bg-white p-2"
                   src={qrCodeUrl}
                 />
               ) : null}
@@ -315,7 +305,7 @@ function HostWaitingRoom() {
                 onClick={handleStart}
                 type="button"
               >
-                {isStarting ? 'Starting...' : 'Start Opening Scene'}
+                {isStarting ? 'Starting...' : 'Start Game'}
               </Button>
 
               {error ? (
@@ -328,15 +318,14 @@ function HostWaitingRoom() {
 
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
-              <CardTitle className="font-display text-3xl text-black">Faction Rosters</CardTitle>
-              <CardDescription className="text-black/75">
-                Live player list by faction.
-              </CardDescription>
+              <CardTitle className="font-display text-3xl text-black">Your Teams</CardTitle>
+       
             </CardHeader>
             <CardContent className="grid gap-4 pb-2 md:grid-cols-2">
               {lobby.factions.map((faction) => (
                 <div className="space-y-3" key={faction.id}>
                   <FactionCard
+                    className="h-40"
                     code={faction.code}
                     description={faction.description}
                     name={faction.name}
@@ -345,7 +334,7 @@ function HostWaitingRoom() {
                   {faction.players.length === 0 ? (
                     <Card className="neo-panel-soft py-0">
                       <CardContent className="px-4 py-3">
-                        <p className="text-sm text-black/65">No players yet.</p>
+                        <p className="text-sm text-black/82">No players yet.</p>
                       </CardContent>
                     </Card>
                   ) : (
@@ -368,7 +357,7 @@ function HostWaitingRoom() {
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/75">Loading round data...</p>
+            <p className="text-sm text-black/90">Loading round data...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -380,7 +369,7 @@ function HostWaitingRoom() {
       <PageShell title="Room Not Found" subtitle="No active game for this host link.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/75">Try creating a new game from the homepage.</p>
+            <p className="text-sm text-black/90">Try creating a new game from the homepage.</p>
             <Button
               className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
@@ -405,14 +394,14 @@ function HostWaitingRoom() {
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Round Status</CardTitle>
-              <CardDescription className="text-black/75">
+              <CardDescription className="text-black/90">
                 Teams unlock once their briefings are ready.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 pb-2">
               <div className="neo-panel-soft p-4">
-                <p className="neo-label text-black/60">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-black/85">{roundState.event}</p>
+                <p className="neo-label text-black/78">World State</p>
+                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
               <Badge
@@ -483,20 +472,20 @@ function HostWaitingRoom() {
           <Card className="neo-panel gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Round Clock</CardTitle>
-              <CardDescription className="text-black/75">
+              <CardDescription className="text-black/90">
                 The round advances when all teams lock in or time runs out.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 pb-2">
               <div className="neo-panel-soft p-4 text-center">
-                <p className="neo-label text-black/60">Time Remaining</p>
+                <p className="neo-label text-black/78">Time Remaining</p>
                 <p className="neo-code mt-2 text-6xl font-semibold text-black">{remainingSeconds}s</p>
               </div>
 
               <div className="neo-panel-soft p-4">
-                <p className="neo-label text-black/60">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-black/85">{roundState.event}</p>
+                <p className="neo-label text-black/78">World State</p>
+                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
               </div>
 
               <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
@@ -511,7 +500,7 @@ function HostWaitingRoom() {
         <Card className="neo-panel gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Faction Status</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               First valid move locks each faction for the round.
             </CardDescription>
           </CardHeader>
@@ -532,7 +521,7 @@ function HostWaitingRoom() {
                     >
                       {faction.submitted ? 'Locked In' : 'Waiting'}
                     </Badge>
-                    <p className="text-xs text-black/70">
+                    <p className="text-xs text-black/92">
                       {faction.playerCount} player{faction.playerCount === 1 ? '' : 's'}
                     </p>
                   </CardContent>
@@ -575,7 +564,7 @@ function HostWaitingRoom() {
     >
       <Card className="neo-panel py-0">
         <CardContent className="space-y-3 px-6 py-6">
-          <p className="text-sm text-black/75">
+          <p className="text-sm text-black/90">
             Gameplay after this stage is still under construction.
           </p>
         </CardContent>

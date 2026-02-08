@@ -61,7 +61,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html>
+    <html style={{fontSize: '18px'}}>
       <head>
         <HeadContent />
       </head>

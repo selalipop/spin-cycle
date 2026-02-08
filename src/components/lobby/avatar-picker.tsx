@@ -13,7 +13,7 @@ export function AvatarPicker({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="neo-label text-black/70">Choose Your Avatar</p>
+        <p className="neo-label text-black/92">Choose Your Avatar</p>
         <Badge className="rounded-full border border-black bg-white px-2 py-1 text-xs text-black">
           <img
             alt="Selected avatar preview"

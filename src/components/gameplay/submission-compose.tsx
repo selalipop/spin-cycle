@@ -34,7 +34,7 @@ export function SubmissionCompose({
               Draft Your Move
             </Badge>
             <CardTitle className="font-heading text-2xl text-black">{actionName}</CardTitle>
-            <CardDescription className="text-black/75">{actionPrompt}</CardDescription>
+            <CardDescription className="text-black/90">{actionPrompt}</CardDescription>
           </div>
 
           <Button
@@ -50,8 +50,8 @@ export function SubmissionCompose({
 
       <CardContent className="space-y-4 pb-2">
         <div className="neo-panel-soft p-4">
-          <p className="neo-label text-black/60">Current Goal</p>
-          <p className="mt-2 text-sm text-black/85 sm:text-base">{goal}</p>
+          <p className="neo-label text-black/78">Current Goal</p>
+          <p className="mt-2 text-sm text-black/92 sm:text-base">{goal}</p>
         </div>
 
         <Textarea
@@ -62,7 +62,7 @@ export function SubmissionCompose({
         />
 
         <div className="flex items-center justify-between gap-3">
-          <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/60">
+          <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/78">
             {content.trim().length} characters drafted
           </p>
           <Button

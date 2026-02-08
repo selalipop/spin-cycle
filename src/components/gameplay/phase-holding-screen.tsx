@@ -19,7 +19,7 @@ export function PhaseHoldingScreen({
         </Badge>
         <Spinner className="size-9 text-black" />
         <p className="font-heading text-2xl text-black">{title}</p>
-        <p className="max-w-xl text-sm text-black/75 sm:text-base">{description}</p>
+        <p className="max-w-xl text-sm text-black/90 sm:text-base">{description}</p>
       </CardContent>
     </Card>
   )

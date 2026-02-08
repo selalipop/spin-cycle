@@ -2,7 +2,6 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -19,6 +18,7 @@ export function FactionCard({
   selected,
   onSelect,
   actionLabel,
+  className,
 }: {
   code: string
   name: string
@@ -27,18 +27,20 @@ export function FactionCard({
   selected?: boolean
   onSelect?: () => void
   actionLabel?: string
+  className?: string
 }) {
   const theme = getFactionTheme(code)
 
   return (
     <Card
       className={cn(
-        'neo-panel neo-pressable gap-4 overflow-hidden py-4',
+        'neo-panel neo-pressable gap-4 overflow-hidden py-4 min-w-0',
         theme.softClass,
         theme.borderClass,
         selected
           ? '-translate-x-[2px] -translate-y-[2px] ring-2 ring-black/80'
           : 'translate-x-0 translate-y-0',
+        className,
       )}
     >
       <CardHeader className="gap-3 pb-0">
@@ -50,12 +52,10 @@ export function FactionCard({
             {playerCount} on team
           </Badge>
         </div>
-        <CardDescription className="text-sm text-black/75">{description}</CardDescription>
+        <CardDescription className="text-sm leading-relaxed text-black/90">
+          {description}
+        </CardDescription>
       </CardHeader>
-
-      <CardContent className="pb-0">
-        <p className="neo-label text-black/65">Faction pick shapes your goals each round.</p>
-      </CardContent>
 
       {onSelect ? (
         <CardFooter className="pt-0">

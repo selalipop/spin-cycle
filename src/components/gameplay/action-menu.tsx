@@ -47,14 +47,14 @@ function ActionRow({
             {action.isShared ? 'Shared' : 'Faction'}
           </Badge>
         </div>
-        <p className="text-sm text-black/75">{action.prompt}</p>
-        <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/60">{statusLabel}</p>
+        <p className="text-sm text-black/90">{action.prompt}</p>
+        <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/78">{statusLabel}</p>
       </div>
 
       <Badge
         className={cn(
           'shrink-0 rounded-full border border-black px-2 py-1 text-[0.66rem] uppercase',
-          isDisabled ? 'bg-black/10 text-black/60' : 'bg-primary text-primary-foreground',
+          isDisabled ? 'bg-black/10 text-black/78' : 'bg-primary text-primary-foreground',
         )}
       >
         {action.cost} credits
@@ -78,14 +78,14 @@ export function ActionMenu({
     <Card className="neo-panel gap-5 py-4">
       <CardHeader className="gap-3 pb-0">
         <CardTitle className="font-display text-2xl text-black sm:text-3xl">Pick a Move</CardTitle>
-        <CardDescription className="text-black/75">
+        <CardDescription className="text-black/90">
           Shared moves are available to everyone. Faction moves are your team exclusives.
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-5 pb-2">
         <div className="space-y-3">
-          <p className="neo-label text-black/65">Shared Moves</p>
+          <p className="neo-label text-black/82">Shared Moves</p>
           {sharedActions.map((action) => (
             <ActionRow action={action} disabled={locked} key={action.id} onSelect={onSelectAction} />
           ))}
@@ -94,7 +94,7 @@ export function ActionMenu({
         <div className="h-[2px] w-full bg-black/20" />
 
         <div className="space-y-3">
-          <p className="neo-label text-black/65">Faction Moves</p>
+          <p className="neo-label text-black/82">Faction Moves</p>
           {factionActions.map((action) => (
             <ActionRow action={action} disabled={locked} key={action.id} onSelect={onSelectAction} />
           ))}

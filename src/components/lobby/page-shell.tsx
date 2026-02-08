@@ -33,13 +33,13 @@ export function PageShell({
   children,
 }: {
   eyebrow?: string
-  title: string
+  title?: string
   subtitle?: string
   children: ReactNode
 }) {
-  const reduceMotion = useReducedMotion()
+  const reduceMotion = Boolean(useReducedMotion())
   const content = Children.toArray(children)
-
+  const emptyHeader = !eyebrow && !title && !subtitle
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_8%,rgba(255,176,90,0.28),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(255,95,95,0.2),transparent_34%)]" />
@@ -52,20 +52,21 @@ export function PageShell({
         initial={{ opacity: 0 }}
         transition={{ duration: reduceMotion ? 0 : 0.2 }}
       >
-        <motion.header
+        {!emptyHeader && <motion.header
           animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
           className="neo-panel neo-grid neo-tilt-left space-y-3 p-6 text-center sm:p-8 sm:text-left"
           initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
           transition={reduceMotion ? undefined : { duration: 0.26, ease: PAGE_EASE }}
         >
           {eyebrow ? (
-            <p className="neo-label inline-flex w-fit rounded-full border border-black bg-white px-3 py-1 text-black/70">
+            <p className="neo-label inline-flex w-fit rounded-full border border-black bg-white px-3 py-1 text-black/92">
               {eyebrow}
             </p>
           ) : null}
-          <h1 className="neo-display text-4xl leading-[1.06] text-black sm:text-5xl">{title}</h1>
-          {subtitle ? <p className="max-w-3xl text-base text-black/75 sm:text-lg">{subtitle}</p> : null}
-        </motion.header>
+
+          {title && <h1 className="neo-display text-4xl leading-[1.06] text-black sm:text-5xl">{title}</h1>}
+          {subtitle ? <p className="max-w-3xl text-base text-black/90 sm:text-lg">{subtitle}</p> : null}
+        </motion.header>}
 
         <motion.div
           animate="show"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../../convex/_generated/api'
@@ -33,6 +33,7 @@ function PlayerWaitingRoom() {
   const [isBriefingOpen, setIsBriefingOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const actionPanelRef = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
     if (!playerState) {
@@ -122,13 +123,24 @@ function PlayerWaitingRoom() {
     }
   }
 
+  const handleCloseBriefing = () => {
+    setIsBriefingOpen(false)
+
+    window.requestAnimationFrame(() => {
+      actionPanelRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }
+
   if (playerState === undefined) {
     return (
       <PageShell title="Loading Seat" subtitle="Connecting you to the current game.">
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/75">Syncing your player state...</p>
+            <p className="text-sm text-black/90">Syncing your player state...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -140,7 +152,7 @@ function PlayerWaitingRoom() {
       <PageShell title="Player Link Not Found" subtitle="This player URL is no longer valid.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/75">Join again with the host code.</p>
+            <p className="text-sm text-black/90">Join again with the host code.</p>
             <Button
               className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
@@ -202,7 +214,7 @@ function PlayerWaitingRoom() {
           factionName={playerState.player.faction.name}
           goal={goal}
           isOpen={isBriefingOpen}
-          onClose={() => setIsBriefingOpen(false)}
+          onClose={handleCloseBriefing}
         />
 
         <section className="grid gap-4 lg:grid-cols-[minmax(0,340px)_1fr]">
@@ -224,7 +236,7 @@ function PlayerWaitingRoom() {
                 </Avatar>
                 <div>
                   <p className="font-heading text-lg text-black">{playerState.player.name}</p>
-                  <p className="text-sm text-black/70">{playerState.player.faction.name}</p>
+                  <p className="text-sm text-black/92">{playerState.player.faction.name}</p>
                 </div>
               </div>
 
@@ -244,15 +256,15 @@ function PlayerWaitingRoom() {
           <Card className="neo-panel neo-grid gap-4 py-4">
             <CardHeader className="gap-3 pb-0">
               <CardTitle className="font-display text-3xl text-black">Faction Brief</CardTitle>
-              <CardDescription className="text-black/75">
+              <CardDescription className="text-black/90">
                 Keep your move aligned with this objective.
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4 pb-2">
               <div className="neo-panel-soft p-4">
-                <p className="neo-label text-black/60">This Round Goal</p>
-                <p className="mt-2 text-base text-black/85">{goal}</p>
+                <p className="neo-label text-black/78">This Round Goal</p>
+                <p className="mt-2 text-base text-black/92">{goal}</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -275,40 +287,65 @@ function PlayerWaitingRoom() {
           </Card>
         </section>
 
-        {playerState.factionSubmitted ? (
-          <PhaseHoldingScreen
-            description="A teammate already locked your faction move. Hang tight while other teams finish."
-            label="Move Locked"
-            title="Waiting On Other Teams"
-          />
-        ) : selectedAction ? (
-          <SubmissionCompose
-            actionName={selectedAction.name}
-            actionPrompt={selectedAction.prompt}
-            canSubmit={content.trim().length > 0 && !isSubmitting}
-            content={content}
-            goal={goal}
-            isSubmitting={isSubmitting}
-            onBack={() => {
-              setSelectedAction(null)
-              setContent('')
-            }}
-            onContentChange={setContent}
-            onSubmit={handleSubmit}
-          />
-        ) : (
-          <ActionMenu
-            factionActions={playerState.factionActions}
-            locked={playerState.factionSubmitted}
-            onSelectAction={handleSelectAction}
-            sharedActions={playerState.sharedActions}
-          />
-        )}
+        <section className="space-y-3" ref={actionPanelRef}>
+          {playerState.factionSubmitted ? (
+            <>
+              <PhaseHoldingScreen
+                description="Your faction move is already locked for this round. Hang tight while other teams finish."
+                label="Move Locked"
+                title="Waiting On Other Teams"
+              />
+              <Card className="neo-panel py-0">
+                <CardContent className="space-y-2 px-6 py-4">
+                  <p className="neo-label text-black/78">Locked Move</p>
+                  <p className="text-sm text-black/92">
+                    {playerState.submittedAction?.content ?? 'A teammate has already submitted for this round.'}
+                  </p>
+                </CardContent>
+              </Card>
+            </>
+          ) : selectedAction ? (
+            <SubmissionCompose
+              actionName={selectedAction.name}
+              actionPrompt={selectedAction.prompt}
+              canSubmit={content.trim().length > 0 && !isSubmitting}
+              content={content}
+              goal={goal}
+              isSubmitting={isSubmitting}
+              onBack={() => {
+                setSelectedAction(null)
+                setContent('')
+              }}
+              onContentChange={setContent}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <>
+              {playerState.sharedActions.length === 0 && playerState.factionActions.length === 0 ? (
+                <Card className="neo-panel py-0">
+                  <CardContent className="space-y-3 px-6 py-5">
+                    <p className="font-heading text-lg text-black">No moves available yet.</p>
+                    <p className="text-sm text-black/90">
+                      Keep this page open and refresh in a moment. If this persists, tell the host to refresh the main screen.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <ActionMenu
+                  factionActions={playerState.factionActions}
+                  locked={playerState.factionSubmitted}
+                  onSelectAction={handleSelectAction}
+                  sharedActions={playerState.sharedActions}
+                />
+              )}
+            </>
+          )}
+        </section>
 
         <Card className="neo-panel gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Your Team</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               Players currently in {playerState.player.faction.name}.
             </CardDescription>
           </CardHeader>
@@ -363,7 +400,7 @@ function PlayerWaitingRoom() {
     >
       <Card className="neo-panel py-0">
         <CardContent className="space-y-3 px-6 py-6">
-          <p className="text-sm text-black/75">Stay ready. The host will move the game forward.</p>
+          <p className="text-sm text-black/90">Stay ready. The host will move the game forward.</p>
         </CardContent>
       </Card>
     </PageShell>

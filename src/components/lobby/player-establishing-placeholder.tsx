@@ -15,7 +15,7 @@ export function PlayerEstablishingPlaceholder({
         </Badge>
         <Spinner className="size-9 text-black" />
         <p className="font-heading text-2xl text-black">Story setup is on the big screen.</p>
-        <p className="max-w-lg text-sm text-black/75">
+        <p className="max-w-lg text-sm text-black/90">
           {factionName} joins as soon as the opening scene wraps and round one starts.
         </p>
       </CardContent>

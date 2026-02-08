@@ -15,7 +15,7 @@ import {
 } from './_generated/server'
 import { GENERATE_FACTION_BRIEF } from './prompts'
 
-const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4'
+const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-4.5'
 const SUBMITTING_DURATION_MS = 60_000
 const MAX_SUBMISSION_CONTENT_LENGTH = 1800
 

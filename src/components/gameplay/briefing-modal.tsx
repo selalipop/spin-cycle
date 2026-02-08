@@ -1,6 +1,7 @@
 import { Button } from '~/components/ui/button'
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -36,8 +37,8 @@ export function BriefingModal({
         <div className="neo-grid max-h-[92vh] overflow-y-auto p-6">
           <DialogHeader className="gap-3 text-left">
             <DialogTitle className="font-display text-3xl text-black">{factionName} Brief</DialogTitle>
-            <DialogDescription className="rounded-xl border-2 border-black bg-white p-3 text-sm text-black/80">
-              <span className="neo-label mr-2 text-black/60">Goal</span>
+            <DialogDescription className="rounded-xl border-2 border-black bg-white p-3 text-sm text-black/88">
+              <span className="neo-label mr-2 text-black/78">Goal</span>
               {goal}
             </DialogDescription>
           </DialogHeader>
@@ -47,13 +48,14 @@ export function BriefingModal({
           </p>
 
           <div className="mt-6 flex justify-end">
-            <Button
-              className="h-10 border-2 border-black px-4 font-heading text-xs uppercase tracking-[0.08em]"
-              onClick={onClose}
-              type="button"
-            >
-              Back to Team
-            </Button>
+            <DialogClose asChild>
+              <Button
+                className="h-10 border-2 border-black px-4 font-heading text-xs uppercase tracking-[0.08em]"
+                type="button"
+              >
+                Back to Team
+              </Button>
+            </DialogClose>
           </div>
         </div>
       </DialogContent>

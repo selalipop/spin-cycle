@@ -99,7 +99,7 @@ function JoinGamePage() {
         <Card className="neo-panel py-0">
           <CardContent className="flex items-center gap-3 px-6 py-6">
             <Spinner className="size-5 text-black" />
-            <p className="text-sm text-black/75">Looking up code {normalizedJoinCode}...</p>
+            <p className="text-sm text-black/90">Looking up code {normalizedJoinCode}...</p>
           </CardContent>
         </Card>
       </PageShell>
@@ -111,7 +111,7 @@ function JoinGamePage() {
       <PageShell title="Room Not Found" subtitle="This code does not match an active room.">
         <Card className="neo-panel py-0">
           <CardContent className="space-y-4 px-6 py-6">
-            <p className="text-sm text-black/75">No game exists for code {normalizedJoinCode}.</p>
+            <p className="text-sm text-black/90">No game exists for code {normalizedJoinCode}.</p>
             <Button
               className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
               onClick={() => window.location.assign('/')}
@@ -135,7 +135,7 @@ function JoinGamePage() {
         <Card className="neo-panel neo-grid gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Player Setup</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               This is your identity for the whole match.
             </CardDescription>
           </CardHeader>
@@ -177,7 +177,7 @@ function JoinGamePage() {
         <Card className="neo-panel neo-grid gap-4 py-4">
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Choose Your Faction</CardTitle>
-            <CardDescription className="text-black/75">
+            <CardDescription className="text-black/90">
               Every faction wants public sentiment to land in different places.
             </CardDescription>
           </CardHeader>

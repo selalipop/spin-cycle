@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bungee&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bungee&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -40,7 +40,7 @@
   --chart-5: oklch(66.3% 0.199 295.6);
 
   --spin-paper: oklch(95.85% 0.025 88.7);
-  --spin-grid-line: oklch(25.8% 0.018 38.4 / 0.18);
+  --spin-grid-line: oklch(25.8% 0.018 38.4 / 0.09);
   --spin-shadow: 6px 6px 0 0 oklch(20.2% 0.028 34.9 / 0.97);
 }
 
@@ -81,8 +81,12 @@
 
   --font-display: 'Bungee', Impact, sans-serif;
   --font-heading: 'Archivo Black', 'Arial Black', sans-serif;
+  --font-ribbon: 'Anton', 'Archivo Black', 'Arial Black', sans-serif;
   --font-base: 'Space Grotesk', 'Segoe UI', sans-serif;
   --font-mono: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+
+  --font-weight-base: 800;
+  --font-weight-heading: 900;
 }
 
 @layer base {
@@ -97,6 +101,7 @@
       radial-gradient(circle at 88% 10%, oklch(88.4% 0.15 29.2 / 0.34), transparent 34%),
       linear-gradient(180deg, oklch(94.2% 0.03 90.3) 0%, oklch(92.8% 0.04 82.7) 100%);
     min-height: 100vh;
+    
   }
 
   h1,
@@ -138,6 +143,13 @@
 
   .neo-display {
     @apply font-display tracking-wide;
+  }
+
+  .neo-ribbon-type {
+    font-family: var(--font-ribbon);
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    line-height: 0.92;
   }
 
   .neo-grid {
