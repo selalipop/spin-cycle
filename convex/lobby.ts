@@ -1,7 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
-import { SHARED_ACTIONS, FACTIONS } from './game_data'
+import { SHARED_ACTIONS, FACTIONS, SCENARIOS } from './game_data'
 
 const DEFAULT_EVENT =
   'Breaking: A leaked safety memo reveals a fast-moving chemical spill near downtown schools.'
@@ -51,11 +51,15 @@ export const createGame = mutation({
   handler: async (ctx) => {
     const joinCode = await generateUniqueJoinCode(ctx)
     const publicGameId = createPublicId()
+    const scenario = chooseScenario()
 
     const gameId = await ctx.db.insert('games', {
       public_id: publicGameId,
       join_code: joinCode,
-      event: DEFAULT_EVENT,
+      scenario_id: scenario.id,
+      scenario_title: scenario.title,
+      intro_video: scenario.intro_video,
+      event: scenario.event,
       max_rounds: 4,
       phase: 'lobby',
       sentiments: INITIAL_SENTIMENTS,
@@ -225,6 +229,8 @@ export const getGameLobby = query({
       gameId: v.string(),
       joinCode: v.string(),
       phase: gamePhaseValidator,
+      scenarioTitle: v.string(),
+      introVideo: v.string(),
       event: v.string(),
       totalPlayers: v.number(),
       factions: v.array(
@@ -273,6 +279,8 @@ export const getGameLobby = query({
       gameId: game.public_id,
       joinCode: game.join_code,
       phase: game.phase,
+      scenarioTitle: game.scenario_title ?? 'Breaking Story',
+      introVideo: game.intro_video ?? 'scenarios/golden_gate.mp4',
       event: game.event,
       totalPlayers: players.length,
       factions: factions.map((faction) => {
@@ -571,3 +579,34 @@ function createPublicId(): string {
 }
 
 type DbContext = Pick<MutationCtx, 'db'> | Pick<QueryCtx, 'db'>
+
+function chooseScenario(): {
+  id: string
+  title: string
+  event: string
+  intro_video: string
+} {
+  if (SCENARIOS.length === 0) {
+    return {
+      id: 'default_breaking_story',
+      title: 'Breaking Story',
+      event: DEFAULT_EVENT,
+      intro_video: 'scenarios/golden_gate.mp4',
+    }
+  }
+
+  const index = Math.floor(Math.random() * SCENARIOS.length)
+  const scenario = SCENARIOS[index] as {
+    id: string
+    title: string
+    event: string
+    intro_video?: string
+  }
+
+  return {
+    id: scenario.id,
+    title: scenario.title,
+    event: scenario.event,
+    intro_video: scenario.intro_video ?? 'scenarios/golden_gate.mp4',
+  }
+}

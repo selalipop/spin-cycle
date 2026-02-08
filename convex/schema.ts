@@ -88,6 +88,15 @@ export default defineSchema({
     /** 4-6 character uppercase code players type on their phone. */
     join_code: v.string(),
 
+    /** Scenario key selected for this game, e.g. "golden_gate". */
+    scenario_id: v.optional(v.string()),
+
+    /** Human-readable scenario title shown on the big screen. */
+    scenario_title: v.optional(v.string()),
+
+    /** Public path to intro video played during establishing phase. */
+    intro_video: v.optional(v.string()),
+
     /** The seed event, e.g. "A second Golden Gate Bridge appeared overnight..." */
     event: v.string(),
 

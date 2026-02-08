@@ -571,11 +571,13 @@ export const SCENARIOS = [
   {
     "id": "eiffel_walk",
     "title": "The Walking Tower",
-    "event": "The Eiffel Tower started walking at 3am. It is currently crossing the Seine. It appears to be heading south."
+    "event": "The Eiffel Tower started walking at 3am. It is currently crossing the Seine. It appears to be heading south.",
+    "intro_video": "scenarios/eiffel_walk.mp4"
   },
   {
     "id": "golden_gate",
     "title": "The Second Bridge",
-    "event": "A second identical Golden Gate Bridge appeared overnight. It goes to the same places. Nobody built it. Traffic is actually better."
+    "event": "A second identical Golden Gate Bridge appeared overnight. It goes to the same places. Nobody built it. Traffic is actually better.",
+    "intro_video": "scenarios/golden_gate.mp4"
   }
 ]

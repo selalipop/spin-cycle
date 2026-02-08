@@ -8,7 +8,9 @@
  * @module
  */
 
+import type * as game_data_index from "../game_data/index.js";
 import type * as lobby from "../lobby.js";
+import type * as prompts_index from "../prompts/index.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +19,9 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "game_data/index": typeof game_data_index;
   lobby: typeof lobby;
+  "prompts/index": typeof prompts_index;
 }>;
 
 /**

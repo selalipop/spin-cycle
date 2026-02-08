@@ -3,6 +3,7 @@ import { Avatar, Button, Card, Chip, Spinner } from '@heroui/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from '../../../../../convex/_generated/api'
+import { PlayerEstablishingPlaceholder } from '~/components/lobby/player-establishing-placeholder'
 import { FactionCard } from '~/components/lobby/faction-card'
 import { PageShell } from '~/components/lobby/page-shell'
 import { PlayerListItem } from '~/components/lobby/player-list-item'
@@ -50,6 +51,18 @@ function PlayerWaitingRoom() {
     )
   }
 
+  if (playerState.phase === 'establishing') {
+    return (
+      <PageShell
+        eyebrow={playerState.player.faction.name}
+        subtitle="The host is presenting the opening sequence on the main screen."
+        title="Establishing In Progress"
+      >
+        <PlayerEstablishingPlaceholder factionName={playerState.player.faction.name} />
+      </PageShell>
+    )
+  }
+
   return (
     <PageShell
       eyebrow={playerState.player.faction.name}
@@ -76,10 +89,6 @@ function PlayerWaitingRoom() {
             </Chip>
             {playerState.phase === 'lobby' ? (
               <p className="text-sm text-zinc-300">Waiting for host to start...</p>
-            ) : playerState.phase === 'establishing' ? (
-              <Chip className="bg-amber-600/25 text-amber-200">
-                Host is establishing the premise...
-              </Chip>
             ) : (
               <Chip className="bg-emerald-600/25 text-emerald-200">
                 Round 1 is live. Gameplay screen coming next.

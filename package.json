@@ -10,7 +10,7 @@
     "dev:convex": "npx convex dev",
     "build": "vite build && tsc --noEmit",
     "start": "node .output/server/index.mjs",
-    "game-data": "npx tsx convex/game_data/generate.ts",
+    "game-data": "npx tsx scripts/generate-game-data.ts",
     "format": "prettier --write .",
     "lint": "tsc && eslint .  --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
@@ -25,7 +25,8 @@
     "convex": "^1.31.7",
     "js-yaml": "^4.1.1",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "untun": "^0.1.3"
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.1.1",
