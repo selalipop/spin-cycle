@@ -9,6 +9,7 @@
  */
 
 import type * as game_data_index from "../game_data/index.js";
+import type * as gameplay from "../gameplay.js";
 import type * as lobby from "../lobby.js";
 import type * as prompts_index from "../prompts/index.js";
 
@@ -20,6 +21,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "game_data/index": typeof game_data_index;
+  gameplay: typeof gameplay;
   lobby: typeof lobby;
   "prompts/index": typeof prompts_index;
 }>;

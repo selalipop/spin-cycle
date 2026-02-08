@@ -445,13 +445,17 @@ export const startRoundOne = mutation({
       throw new ConvexError('Round one already exists')
     }
 
-    const factions = await ctx.db
-      .query('factions')
+    const players = await ctx.db
+      .query('players')
       .withIndex('by_game', (q) => q.eq('game_id', game._id))
       .collect()
 
-    if (factions.length === 0) {
-      throw new ConvexError('Cannot start round one without factions')
+    const participatingFactionIds = Array.from(
+      new Set(players.map((player) => player.faction_id)),
+    )
+
+    if (participatingFactionIds.length === 0) {
+      throw new ConvexError('At least one player must join before starting round one')
     }
 
     await ctx.db.insert('rounds', {
@@ -459,8 +463,9 @@ export const startRoundOne = mutation({
       number: 1,
       event_development: game.event,
       sentiment_before: game.sentiments,
-      faction_briefs: buildInitialFactionBriefs(factions),
-      faction_submitted: buildInitialFactionSubmitted(factions),
+      faction_briefs: {},
+      faction_submitted: buildInitialFactionSubmitted(participatingFactionIds),
+      planning_status: 'pending',
     })
 
     await ctx.db.patch(game._id, {
@@ -476,28 +481,13 @@ export const startRoundOne = mutation({
   },
 })
 
-function buildInitialFactionBriefs(
-  factions: Array<Doc<'factions'>>,
-): Record<Id<'factions'>, { goal: string; briefing: string }> {
-  const briefs: Partial<Record<Id<'factions'>, { goal: string; briefing: string }>> = {}
-
-  for (const faction of factions) {
-    briefs[faction._id] = {
-      goal: `Advance ${faction.name}'s agenda in this breaking story.`,
-      briefing: `${faction.description} More detailed AI briefings will be generated before actions are submitted.`,
-    }
-  }
-
-  return briefs as Record<Id<'factions'>, { goal: string; briefing: string }>
-}
-
 function buildInitialFactionSubmitted(
-  factions: Array<Doc<'factions'>>,
+  factionIds: Array<Id<'factions'>>,
 ): Record<Id<'factions'>, boolean> {
   const submitted: Partial<Record<Id<'factions'>, boolean>> = {}
 
-  for (const faction of factions) {
-    submitted[faction._id] = false
+  for (const factionId of factionIds) {
+    submitted[factionId] = false
   }
 
   return submitted as Record<Id<'factions'>, boolean>

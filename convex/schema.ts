@@ -322,6 +322,29 @@ export default defineSchema({
      * has at least one submitted action before resolving.
      */
     faction_submitted: v.record(v.id("factions"), v.boolean()),
+
+    /**
+     * Planning lifecycle for this round.
+     * - pending: round created, briefings not started
+     * - generating: briefing generation in progress
+     * - ready: briefings are available and game has entered submitting
+     */
+    planning_status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("generating"),
+        v.literal("ready"),
+      ),
+    ),
+
+    /** Timestamp when planning briefings were finished. */
+    planning_generated_at_ms: v.optional(v.number()),
+
+    /** Timestamp when submitting started for this round. */
+    submitting_started_at_ms: v.optional(v.number()),
+
+    /** Absolute deadline for submitting timeout handling (epoch ms). */
+    submitting_deadline_ms: v.optional(v.number()),
   }).index("by_game_and_number", ["game_id", "number"]),
 
   // ===========================================================================

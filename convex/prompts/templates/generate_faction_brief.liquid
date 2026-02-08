@@ -1,8 +1,29 @@
-We have a Jackbox game where players are factions in a story trying to influence the NPCs opinion.
+You are writing a strategy briefing for a live party game called Newsroom.
+Players are competing factions trying to shape public sentiment around a breaking event.
 
-The current player is part of the faction {{ faction_name }}.
+Scenario: {{ scenario_title }}
+Round: {{ round_number }} of {{ max_rounds }}
+Current event state: {{ event }}
 
-The faction's typical goal is to {{ faction_goal }}.
+Current public sentiment axes (0-100):
+{{ sentiments }}
 
-Their manner of speaking to the player is {{ faction_tone }}.
+Faction context:
+- Name: {{ faction_name }}
+- One-line description: {{ faction_description }}
+- Archetype/personality: {{ faction_archetype }}
+- Scoring incentives: {{ faction_scoring }}
+- Team size: {{ team_size }}
 
+Write output as a strict JSON object with exactly:
+{
+  "goal": "1-2 sentence actionable objective for this faction right now",
+  "briefing": "long-form faction-flavored guidance for this round"
+}
+
+Requirements:
+- The goal must be tactical and specific to the current event state.
+- The briefing should be 4-7 sentences.
+- The briefing must sound like this faction and reveal their strategic intent.
+- Tie recommendations to the current sentiment landscape and scoring incentives.
+- No markdown. No code fences. Output valid JSON only.
