@@ -1,0 +1,51 @@
+[ 4215518ms] Error: Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <SafeFragment>
+      <SafeFragment fallback={null}>
+        <CatchBoundary getResetKey={function getResetKey} errorComponent={function defaultErrorComponent} ...>
+          <CatchBoundaryImpl getResetKey={function getResetKey} onCatch={function onCatch}>
+            <CatchNotFound fallback={function fallback}>
+              <CatchBoundary getResetKey={function getResetKey} onCatch={function onCatch} ...>
+                <CatchBoundaryImpl getResetKey={function getResetKey} onCatch={function onCatch}>
+                  <MatchInnerImpl matchId="__root__/">
+                    <RootComponent>
+                      <RootDocument>
+                        <html>
+                          <head>
+                            <HeadContent>
+                              <Asset>
+                              <Asset>
+                              <Asset>
+                              <Asset tag="link" attrs={{rel:"style...", ...}} nonce={undefined}>
++                               <link
++                                 rel="stylesheet"
++                                 href="/src/styles/app.css"
++                                 nonce={undefined}
++                                 suppressHydrationWarning={true}
++                               >
+-                               <meta charset="utf-8">
+                              ...
+                          ...
+
+    at throwOnHydrationMismatch (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:3920:13)
+    at beginWork (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:8694:196)
+    at runWithFiberInDEV (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:997:72)
+    at performUnitOfWork (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12561:98)
+    at workLoopConcurrentByScheduler (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12557:11)
+    at renderRootConcurrent (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12539:71)
+    at performWorkOnRoot (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:11766:152)
+    at performWorkOnRootViaSchedulerTask (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:13505:9)
+    at MessagePort.performWorkUntilDeadline (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:36:50)
+[ 4249245ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/src/components/ui/spinner.tsx?t=1770551683919:0
+[ 4249245ms] [ERROR] [vite] Failed to reload /src/components/ui/spinner.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:3000/@vite/client:808

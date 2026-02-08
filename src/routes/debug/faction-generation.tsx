@@ -7,7 +7,7 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { NativeSelect, NativeSelectOption } from '~/components/ui/native-select'
-import { Spinner } from '~/components/ui/spinner'
+import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 import { Textarea } from '~/components/ui/textarea'
 
 export const Route = createFileRoute('/debug/faction-generation')({
@@ -88,8 +88,8 @@ function FactionGenerationDebugPage() {
     return (
       <PageShell title="Faction Generator Debug" subtitle="Loading settings.">
         <Card className="neo-panel py-0">
-          <CardContent className="flex items-center gap-3 px-6 py-6">
-            <Spinner className="size-5 text-black" />
+          <CardContent className="flex flex-col items-center gap-4 px-6 py-10">
+            <WashingMachineLoader />
             <p className="text-sm text-black/90">Loading scenarios and factions...</p>
           </CardContent>
         </Card>

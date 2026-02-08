@@ -1,6 +1,6 @@
 import { Badge } from '~/components/ui/badge'
 import { Card, CardContent } from '~/components/ui/card'
-import { Spinner } from '~/components/ui/spinner'
+import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 
 export function PhaseHoldingScreen({
   label,
@@ -17,7 +17,7 @@ export function PhaseHoldingScreen({
         <Badge className="rounded-full border border-black bg-white px-3 py-1 text-xs uppercase text-black">
           {label}
         </Badge>
-        <Spinner className="size-9 text-black" />
+        <WashingMachineLoader />
         <p className="font-heading text-2xl text-black">{title}</p>
         <p className="max-w-xl text-base text-black/90 sm:text-lg">{description}</p>
       </CardContent>

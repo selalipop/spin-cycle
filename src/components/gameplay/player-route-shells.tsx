@@ -1,14 +1,14 @@
 import { PageShell } from '~/components/lobby/page-shell'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent } from '~/components/ui/card'
-import { Spinner } from '~/components/ui/spinner'
+import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 
 export function PlayerStateLoadingScreen() {
   return (
     <PageShell title="Loading Seat" subtitle="Connecting you to the current game.">
       <Card className="neo-panel py-0">
-        <CardContent className="flex items-center gap-3 px-6 py-6">
-          <Spinner className="size-5 text-black" />
+        <CardContent className="flex flex-col items-center gap-4 px-6 py-10">
+          <WashingMachineLoader />
           <p className="text-base text-black/90">Syncing your player state...</p>
         </CardContent>
       </Card>

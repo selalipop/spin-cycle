@@ -12,7 +12,7 @@ import { PlayerListItem } from '~/components/lobby/player-list-item'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
-import { Spinner } from '~/components/ui/spinner'
+import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 import { getFactionTheme } from '~/lib/factions'
 
 export const Route = createFileRoute('/game/$gameId/host')({
@@ -26,12 +26,14 @@ function HostWaitingRoom() {
 
   const startGame = useMutation(api.lobby.startGame)
   const startRoundOne = useMutation(api.lobby.startRoundOne)
+  const prepareNextRoundIntroduction = useMutation(api.lobby.prepareNextRoundIntroduction)
   const advanceSubmittingToResolving = useMutation(api.gameplay.advanceSubmittingToResolving)
   const generatePlanningBriefings = useAction(api.gameplay.generatePlanningBriefings)
   const processRoundSubmissions = useAction(api.gameplay.processRoundSubmissions)
 
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isAdvancingRound, setIsAdvancingRound] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   const [openingStage, setOpeningStage] = useState<OpeningStage>('loading')
   const [planningStatus, setPlanningStatus] = useState<'idle' | 'running' | 'ready' | 'error'>(
@@ -50,17 +52,20 @@ function HostWaitingRoom() {
       return
     }
 
+    const isRoundOneIntro = (roundState?.roundNumber ?? 1) === 1
+    const hasIntroVideo = Boolean(lobby.introVideo) && isRoundOneIntro
+
     setVideoFailed(false)
     setOpeningStage('loading')
 
     const timer = window.setTimeout(() => {
-      setOpeningStage('video')
+      setOpeningStage(hasIntroVideo ? 'video' : 'briefing')
     }, 800)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [lobby?.gameId, lobby?.phase])
+  }, [lobby?.gameId, lobby?.introVideo, lobby?.phase, roundState?.roundNumber])
 
   useEffect(() => {
     if (!roundState || roundState.phase !== 'round_loading' || !roundState.roundNumber) {
@@ -191,12 +196,29 @@ function HostWaitingRoom() {
     }
   }
 
+  const handlePrepareNextRound = async () => {
+    if (!roundState || roundState.phase !== 'round_results') {
+      return
+    }
+
+    setError(null)
+    setIsAdvancingRound(true)
+
+    try {
+      await prepareNextRoundIntroduction({ gameId: roundState.gameId })
+    } catch {
+      setError('Could not start the next round introduction. Please refresh.')
+    } finally {
+      setIsAdvancingRound(false)
+    }
+  }
+
   if (lobby === undefined) {
     return (
       <PageShell title="Loading Host Desk" subtitle="Syncing room state.">
         <Card className="neo-panel py-0">
-          <CardContent className="flex items-center gap-3 px-6 py-6">
-            <Spinner className="size-5 text-black" />
+          <CardContent className="flex flex-col items-center gap-4 px-6 py-10">
+            <WashingMachineLoader />
             <p className="text-base text-black/90">Loading host dashboard...</p>
           </CardContent>
         </Card>
@@ -224,12 +246,15 @@ function HostWaitingRoom() {
   }
 
   if (lobby.phase === 'game_introduction') {
+    const introRoundNumber = (roundState?.roundNumber ?? 0) + 1
+    const isRoundOneIntro = introRoundNumber === 1
+    const showIntroVideo = isRoundOneIntro && Boolean(lobby.introVideo)
     const canStartRoundOne = openingStage === 'briefing'
 
     return (
       <PageShell
         eyebrow="Main Display"
-        title="Opening Scene"
+        title="Round Introduction"
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,320px)_1fr]">
           <Card className="neo-panel neo-grid gap-4 py-4">
@@ -250,15 +275,15 @@ function HostWaitingRoom() {
                 type="button"
               >
                 {isStarting
-                  ? 'Starting Round 1...'
+                  ? `Starting Round ${introRoundNumber}...`
                   : openingStage === 'loading'
-                    ? 'Preparing Scene...'
-                    : openingStage === 'video'
+                    ? 'Preparing Introduction...'
+                    : openingStage === 'video' && showIntroVideo
                       ? 'Finish Clip To Continue'
-                      : 'Start Round 1'}
+                      : `Start Round ${introRoundNumber}`}
               </Button>
 
-              {videoFailed ? (
+              {videoFailed && showIntroVideo ? (
                 <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
                   Intro clip failed to load. You can still continue.
                 </Badge>
@@ -273,7 +298,7 @@ function HostWaitingRoom() {
           </Card>
 
           <HostEstablishingStage
-            event={lobby.event}
+            event={roundState?.escalation ?? roundState?.event ?? lobby.event}
             introVideo={lobby.introVideo}
             onVideoEnded={() => setOpeningStage('briefing')}
             onVideoError={() => {
@@ -281,6 +306,7 @@ function HostWaitingRoom() {
               setOpeningStage('briefing')
             }}
             scenarioTitle={lobby.scenarioTitle}
+            showVideo={showIntroVideo}
             stage={openingStage}
           />
         </section>
@@ -371,8 +397,8 @@ function HostWaitingRoom() {
     return (
       <PageShell title="Loading Round">
         <Card className="neo-panel py-0">
-          <CardContent className="flex items-center gap-3 px-6 py-6">
-            <Spinner className="size-5 text-black" />
+          <CardContent className="flex flex-col items-center gap-4 px-6 py-10">
+            <WashingMachineLoader />
             <p className="text-base text-black/90">Loading round data...</p>
           </CardContent>
         </Card>
@@ -565,6 +591,8 @@ function HostWaitingRoom() {
     const sentimentBefore = roundState.sentimentBefore
     const sentimentAfter = roundState.sentimentAfter
     const latestSentiments = sentimentAfter ?? roundState.sentiments
+    const canPrepareNextRound =
+      typeof roundState.roundNumber === 'number' && roundState.roundNumber < roundState.maxRounds
     const rankedSubmissions = roundState.submittedActions
       .slice()
       .sort((a, b) => {
@@ -628,6 +656,22 @@ function HostWaitingRoom() {
                   Winning move resolved
                 </Badge>
               ) : null}
+              {canPrepareNextRound ? (
+                <Button
+                  className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
+                  disabled={isAdvancingRound}
+                  onClick={handlePrepareNextRound}
+                  type="button"
+                >
+                  {isAdvancingRound
+                    ? `Preparing Round ${(roundState.roundNumber ?? 1) + 1}...`
+                    : `Start Round ${(roundState.roundNumber ?? 1) + 1} Introduction`}
+                </Button>
+              ) : (
+                <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
+                  Final round complete
+                </Badge>
+              )}
             </CardContent>
           </Card>
 
@@ -669,37 +713,20 @@ function HostWaitingRoom() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2">
-          <Card className="neo-panel gap-4 py-4">
-            <CardHeader className="gap-2 pb-0">
-              <CardTitle className="font-heading text-xl text-black">Winning Narrative</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              {roundState.narrative ? (
-                <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
-                  {roundState.narrative}
-                </p>
-              ) : (
-                <p className="text-base text-black/82">Narrative not available for this round.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="neo-panel gap-4 py-4">
-            <CardHeader className="gap-2 pb-0">
-              <CardTitle className="font-heading text-xl text-black">Escalation</CardTitle>
-            </CardHeader>
-            <CardContent className="pb-2">
-              {roundState.escalation ? (
-                <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
-                  {roundState.escalation}
-                </p>
-              ) : (
-                <p className="text-base text-black/82">Escalation not available for this round.</p>
-              )}
-            </CardContent>
-          </Card>
-        </section>
+        <Card className="neo-panel gap-4 py-4">
+          <CardHeader className="gap-2 pb-0">
+            <CardTitle className="font-heading text-xl text-black">Winning Narrative</CardTitle>
+          </CardHeader>
+          <CardContent className="pb-2">
+            {roundState.narrative ? (
+              <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
+                {roundState.narrative}
+              </p>
+            ) : (
+              <p className="text-base text-black/82">Narrative not available for this round.</p>
+            )}
+          </CardContent>
+        </Card>
 
         <section className="space-y-3">
           {rankedSubmissions.length === 0 ? (
@@ -754,6 +781,12 @@ function HostWaitingRoom() {
             ))
           )}
         </section>
+
+        {error ? (
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
+            {error}
+          </Badge>
+        ) : null}
       </PageShell>
     )
   }

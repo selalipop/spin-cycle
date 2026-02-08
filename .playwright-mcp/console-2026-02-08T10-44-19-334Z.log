@@ -1,0 +1,17 @@
+[ 4190821ms] [ERROR] %o
+
+%s
+
+%s
+ ReferenceError: Spinner is not defined
+    at PlayerStateLoadingScreen (http://localhost:3000/src/components/gameplay/player-route-shells.tsx?t=1770551649941:8:28)
+    at Object.react_stack_bottom_frame (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:18509:20)
+    at renderWithHooks (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:5654:24)
+    at updateFunctionComponent (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:7475:21)
+    at beginWork (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:8525:20)
+    at runWithFiberInDEV (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:997:72)
+    at performUnitOfWork (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12561:98)
+    at workLoopSync (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12424:43)
+    at renderRootSync (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12408:13)
+    at performWorkOnRoot (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:11827:37) The above error occurred in the <PlayerStateLoadingScreen> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:7000
+[ 4190821ms] [WARNING] Warning: Error in route match: /game/$gameId/player/$playerId/round-results/game/d0c813a6-052d-4bcc-833a-03548b36a5e9/player/03618e80-711d-4ab1-a5b1-7c863603e979/round-results @ http://localhost:3000/node_modules/.pnpm/tiny-warning@1.0.3/node_modules/tiny-warning/dist/tiny-warning.esm.js?v=1ccf33a0:8

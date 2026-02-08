@@ -233,6 +233,7 @@ export const getMainScreenRoundState = query({
       scenarioTitle: v.string(),
       event: v.string(),
       sentiments: sentiments,
+      maxRounds: v.number(),
       sentimentBefore: v.optional(sentiments),
       sentimentAfter: v.optional(sentiments),
       narrative: v.optional(v.string()),
@@ -254,7 +255,7 @@ export const getMainScreenRoundState = query({
       return null
     }
 
-    const [factions, players, round] = await Promise.all([
+    const [factions, players, currentRound] = await Promise.all([
       ctx.db
         .query('factions')
         .withIndex('by_game', (q) => q.eq('game_id', game._id))
@@ -265,6 +266,39 @@ export const getMainScreenRoundState = query({
         .collect(),
       getCurrentRound(ctx, game),
     ])
+
+    let round = currentRound
+    let submissionsForDisplay: Array<Doc<'submitted_actions'>> = []
+
+    if (round) {
+      const activeRound = round
+
+      submissionsForDisplay = await ctx.db
+        .query('submitted_actions')
+        .withIndex('by_round', (q) => q.eq('round_id', activeRound._id))
+        .collect()
+
+      if (
+        game.phase === GamePhase.RoundResults &&
+        submissionsForDisplay.length === 0 &&
+        activeRound.number > 1
+      ) {
+        const previousRound = await ctx.db
+          .query('rounds')
+          .withIndex('by_game_and_number', (q) =>
+            q.eq('game_id', game._id).eq('number', activeRound.number - 1),
+          )
+          .unique()
+
+        if (previousRound) {
+          round = previousRound
+          submissionsForDisplay = await ctx.db
+            .query('submitted_actions')
+            .withIndex('by_round', (q) => q.eq('round_id', previousRound._id))
+            .collect()
+        }
+      }
+    }
 
     const playerCounts = countPlayersByFaction(players)
     const participatingFactionIds = getParticipatingFactionIds(round)
@@ -288,37 +322,31 @@ export const getMainScreenRoundState = query({
         }
       })
 
-    const submittedActions =
-      round === null
-        ? []
-        : (await ctx.db
-          .query('submitted_actions')
-          .withIndex('by_round', (q) => q.eq('round_id', round._id))
-          .collect())
-          .sort((a, b) => a._creationTime - b._creationTime)
-          .map((action) => {
-            const faction = factionsById.get(action.faction_id)
-            const actionType =
-              faction && action.action_type_id !== 'abstain'
-                ? findActionType(game, faction, action.action_type_id)
-                : null
+    const submittedActions = submissionsForDisplay
+      .sort((a, b) => a._creationTime - b._creationTime)
+      .map((action) => {
+        const faction = factionsById.get(action.faction_id)
+        const actionType =
+          faction && action.action_type_id !== 'abstain'
+            ? findActionType(game, faction, action.action_type_id)
+            : null
 
-            return {
-              id: action._id,
-              createdAtMs: action._creationTime,
-              factionId: action.faction_id,
-              actionTypeId: action.action_type_id,
-              actionName:
-                action.action_type_id === 'abstain'
-                  ? 'No Submission'
-                  : actionType?.name ?? formatActionTypeLabel(action.action_type_id),
-              content: action.content,
-              cost: action.cost,
-              gradingRubric: action.grading_rubric,
-              effectiveness: action.effectiveness,
-              impact: action.impact,
-            }
-          })
+        return {
+          id: action._id,
+          createdAtMs: action._creationTime,
+          factionId: action.faction_id,
+          actionTypeId: action.action_type_id,
+          actionName:
+            action.action_type_id === 'abstain'
+              ? 'No Submission'
+              : actionType?.name ?? formatActionTypeLabel(action.action_type_id),
+          content: action.content,
+          cost: action.cost,
+          gradingRubric: action.grading_rubric,
+          effectiveness: action.effectiveness,
+          impact: action.impact,
+        }
+      })
     const winningSubmissionId = getWinningSubmittedActionId(submittedActions)
 
     const submittedFactionCount = round
@@ -331,6 +359,7 @@ export const getMainScreenRoundState = query({
       scenarioTitle: game.scenario_title ?? 'Breaking Story',
       event: round?.event_development ?? game.event,
       sentiments: game.sentiments,
+      maxRounds: game.max_rounds,
       sentimentBefore: round?.sentiment_before,
       sentimentAfter: round?.sentiment_after,
       narrative: round?.narrative,

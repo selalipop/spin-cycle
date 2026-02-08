@@ -414,7 +414,7 @@ export const startRoundOne = mutation({
   returns: v.object({
     gameId: v.string(),
     phase: v.literal(GamePhase.RoundLoading),
-    roundNumber: v.literal(1),
+    roundNumber: v.number(),
   }),
   handler: async (ctx, args) => {
     const game = await findGameByPublicId(ctx, args.gameId)
@@ -425,6 +425,60 @@ export const startRoundOne = mutation({
 
     if (game.phase !== GamePhase.GameIntroduction) {
       throw new ConvexError('Game is not ready to start round one')
+    }
+
+    if (game.current_round) {
+      const currentRound = await ctx.db
+        .query('rounds')
+        .withIndex('by_game_and_number', (q) =>
+          q.eq('game_id', game._id).eq('number', game.current_round as number),
+        )
+        .unique()
+
+      if (!currentRound) {
+        throw new ConvexError('Current round not found')
+      }
+
+      const nextRoundNumber = currentRound.number + 1
+
+      if (nextRoundNumber > game.max_rounds) {
+        throw new ConvexError('All rounds are already complete')
+      }
+
+      const existingNextRound = await ctx.db
+        .query('rounds')
+        .withIndex('by_game_and_number', (q) =>
+          q.eq('game_id', game._id).eq('number', nextRoundNumber),
+        )
+        .unique()
+
+      if (!existingNextRound) {
+        const escalationEvent = normalizeEscalationEvent(
+          currentRound.escalation ?? currentRound.event_development,
+        )
+
+        await ctx.db.insert('rounds', {
+          game_id: game._id,
+          number: nextRoundNumber,
+          event_development: escalationEvent,
+          sentiment_before: game.sentiments,
+          faction_briefs: {},
+          faction_submitted: buildInitialFactionSubmitted(
+            Object.keys(currentRound.faction_submitted) as Array<Id<'factions'>>,
+          ),
+        })
+      }
+
+      await ctx.db.patch("games", game._id, {
+        phase: GamePhase.RoundLoading,
+        current_round: nextRoundNumber,
+      })
+
+      return {
+        gameId: game.public_id,
+        phase: GamePhase.RoundLoading as GamePhase.RoundLoading,
+        roundNumber: nextRoundNumber,
+      }
     }
 
     const existingRoundOne = await ctx.db
@@ -468,7 +522,56 @@ export const startRoundOne = mutation({
     return {
       gameId: game.public_id,
       phase: GamePhase.RoundLoading as GamePhase.RoundLoading,
-      roundNumber: 1 as const,
+      roundNumber: 1,
+    }
+  },
+})
+
+export const prepareNextRoundIntroduction = mutation({
+  args: {
+    gameId: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('prepared'), v.literal('noop')),
+    phase: gamePhase,
+    roundNumber: v.optional(v.number()),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      throw new ConvexError('Game not found')
+    }
+
+    if (game.phase !== GamePhase.RoundResults) {
+      return {
+        status: 'noop' as const,
+        phase: game.phase,
+      }
+    }
+
+    if (!game.current_round) {
+      throw new ConvexError('Current round is missing')
+    }
+
+    if (game.current_round >= game.max_rounds) {
+      return {
+        status: 'noop' as const,
+        phase: game.phase,
+        roundNumber: game.current_round,
+      }
+    }
+
+    const nextRoundNumber = game.current_round + 1
+
+    await ctx.db.patch("games", game._id, {
+      phase: GamePhase.GameIntroduction,
+    })
+
+    return {
+      status: 'prepared' as const,
+      phase: GamePhase.GameIntroduction,
+      roundNumber: nextRoundNumber,
     }
   },
 })
@@ -554,6 +657,20 @@ function normalizeAvatar(value: string): string {
   }
 
   return trimmed
+}
+
+function normalizeEscalationEvent(value: string): string {
+  const trimmed = value
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
+  if (!trimmed) {
+    throw new ConvexError('Escalation text is required to start the next round')
+  }
+
+  return trimmed.slice(0, 6_000)
 }
 
 function createPublicId(): string {

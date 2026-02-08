@@ -9,7 +9,7 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
-import { Spinner } from '~/components/ui/spinner'
+import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 import { DEFAULT_AVATAR_PATH } from '~/lib/avatars'
 import { getOrCreateSessionId, getSavedPlayerId, savePlayerRoute } from '~/lib/session'
 
@@ -97,8 +97,8 @@ function JoinGamePage() {
     return (
       <PageShell title="Finding Room" subtitle="Checking that join code.">
         <Card className="neo-panel py-0">
-          <CardContent className="flex items-center gap-3 px-6 py-6">
-            <Spinner className="size-5 text-black" />
+          <CardContent className="flex flex-col items-center gap-4 px-6 py-10">
+            <WashingMachineLoader />
             <p className="text-base text-black/90">Looking up code {normalizedJoinCode}...</p>
           </CardContent>
         </Card>

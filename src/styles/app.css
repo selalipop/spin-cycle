@@ -167,4 +167,46 @@
   .neo-tilt-right {
     transform: rotate(0.75deg);
   }
+
+  .reel-panel {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .reel-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, oklch(20.2% 0.028 34.9 / 0.06) 100%);
+    pointer-events: none;
+  }
+
+  .reel-text {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 3vw, 3.3rem);
+    letter-spacing: 0.03em;
+    line-height: 1.05;
+    text-transform: uppercase;
+    animation: reel-flicker 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes reel-flicker {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  22% {
+    transform: translateY(-4px);
+    opacity: 0.9;
+  }
+  48% {
+    transform: translateY(2px);
+    opacity: 0.96;
+  }
+  74% {
+    transform: translateY(-3px);
+    opacity: 0.92;
+  }
 }
