@@ -49,3 +49,8 @@ https://react.dev/link/hydration-mismatch
     at MessagePort.performWorkUntilDeadline (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:36:50)
 [ 4249245ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ http://localhost:3000/src/components/ui/spinner.tsx?t=1770551683919:0
 [ 4249245ms] [ERROR] [vite] Failed to reload /src/components/ui/spinner.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above) @ http://localhost:3000/@vite/client:808
+[ 6106146ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553540754:0
+[ 6106308ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553540756:0
+[ 6240564ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553675156:0
+[ 6259562ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553694053:0
+[ 6290446ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553725066:0

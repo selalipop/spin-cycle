@@ -579,5 +579,11 @@ export const SCENARIOS = [
     "title": "The Second Bridge",
     "event": "A second identical Golden Gate Bridge appeared overnight. It goes to the same places. Nobody built it. Traffic is actually better.",
     "intro_video": "scenarios/golden_gate.mp4"
+  },
+  {
+    "id": "raccoon_bank",
+    "title": "The Raccoon Economy",
+    "event": "A colony of raccoons has taken over a regional bank in Ohio. They are wearing ties they found in the trash. They are approving mortgage loans at a 0.5% interest rate. The branch is incredibly profitable.",
+    "intro_video": "scenarios/racoon_bank.mp4"
   }
 ]

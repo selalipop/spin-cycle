@@ -1,4 +1,5 @@
 import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
 import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
 
@@ -12,6 +13,10 @@ export function HostEstablishingStage({
   showVideo,
   onVideoEnded,
   onVideoError,
+  startRoundLabel,
+  startRoundDisabled,
+  onStartRound,
+  error,
 }: {
   stage: OpeningStage
   scenarioTitle: string
@@ -20,6 +25,10 @@ export function HostEstablishingStage({
   showVideo: boolean
   onVideoEnded: () => void
   onVideoError: () => void
+  startRoundLabel?: string
+  startRoundDisabled?: boolean
+  onStartRound?: () => void
+  error?: string | null
 }) {
   if (stage === 'loading') {
     return (
@@ -64,7 +73,7 @@ export function HostEstablishingStage({
             <p className="reel-text mt-2 text-black">{event}</p>
           </div>
           <p className="text-base text-black/90">
-            Once ready, launch the round from the control panel.
+            Once the clip ends, you can start the round.
           </p>
         </CardContent>
       </Card>
@@ -102,6 +111,23 @@ export function HostEstablishingStage({
             <p className="mt-2 text-base text-black/88">Start the round when teams are ready to craft their spin.</p>
           </div>
         </div>
+
+        {onStartRound ? (
+          <Button
+            className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
+            disabled={startRoundDisabled}
+            onClick={onStartRound}
+            type="button"
+          >
+            {startRoundLabel ?? 'Start Round'}
+          </Button>
+        ) : null}
+
+        {error ? (
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
+            {error}
+          </Badge>
+        ) : null}
       </CardContent>
     </Card>
   )

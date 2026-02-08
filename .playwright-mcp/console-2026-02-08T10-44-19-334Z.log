@@ -15,3 +15,8 @@
     at renderRootSync (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:12408:13)
     at performWorkOnRoot (http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:11827:37) The above error occurred in the <PlayerStateLoadingScreen> component. React will try to recreate this component tree from scratch using the error boundary you provided, CatchBoundaryImpl. @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=1ccf33a0:7000
 [ 4190821ms] [WARNING] Warning: Error in route match: /game/$gameId/player/$playerId/round-results/game/d0c813a6-052d-4bcc-833a-03548b36a5e9/player/03618e80-711d-4ab1-a5b1-7c863603e979/round-results @ http://localhost:3000/node_modules/.pnpm/tiny-warning@1.0.3/node_modules/tiny-warning/dist/tiny-warning.esm.js?v=1ccf33a0:8
+[ 6081629ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553540754:0
+[ 6081765ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553540756:0
+[ 6216001ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553675156:0
+[ 6234782ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553694053:0
+[ 6265905ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553725066:0

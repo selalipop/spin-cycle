@@ -4,28 +4,6 @@ import type { ReactNode } from 'react'
 
 const PAGE_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1]
 
-const containerVariants = {
-  hidden: {},
-  show: {
-    transition: {
-      delayChildren: 0.04,
-      staggerChildren: 0.08,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 14 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.28,
-      ease: PAGE_EASE,
-    },
-  },
-}
-
 export function PageShell({
   eyebrow,
   title,
@@ -69,22 +47,16 @@ export function PageShell({
           </motion.header>
         )}
 
-        <motion.div
-          animate="show"
-          className="flex flex-col gap-5"
-          initial="hidden"
-          variants={containerVariants}
-        >
+        <div className="flex flex-col gap-5">
           {content.map((child, index) => (
-            <motion.section
+            <section
               className="flex flex-col gap-5"
               key={index}
-              variants={itemVariants}
             >
               {child}
-            </motion.section>
+            </section>
           ))}
-        </motion.div>
+        </div>
       </motion.div>
     </main>
   )

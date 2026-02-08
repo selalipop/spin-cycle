@@ -52,7 +52,8 @@ function HostWaitingRoom() {
       return
     }
 
-    const isRoundOneIntro = (roundState?.roundNumber ?? 1) === 1
+    const introRoundNumber = (roundState?.roundNumber ?? 0) + 1
+    const isRoundOneIntro = introRoundNumber === 1
     const hasIntroVideo = Boolean(lobby.introVideo) && isRoundOneIntro
 
     setVideoFailed(false)
@@ -250,53 +251,16 @@ function HostWaitingRoom() {
     const isRoundOneIntro = introRoundNumber === 1
     const showIntroVideo = isRoundOneIntro && Boolean(lobby.introVideo)
     const canStartRoundOne = openingStage === 'briefing'
+    const startRoundLabel = isStarting
+      ? `Starting Round ${introRoundNumber}...`
+      : `Start Round ${introRoundNumber}`
 
     return (
       <PageShell
         eyebrow="Main Display"
         title="Round Introduction"
       >
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,320px)_1fr]">
-          <Card className="neo-panel neo-grid gap-4 py-4">
-            <CardHeader className="gap-3 pb-0">
-              <CardTitle className="font-display text-3xl text-black">Control Desk</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pb-2">
-              <div className="space-y-1">
-                <p className="neo-label text-black/78">Join Code</p>
-                <p className="neo-code text-4xl font-semibold text-black">{lobby.joinCode}</p>
-              </div>
-
-
-              <Button
-                className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
-                disabled={isStarting || !canStartRoundOne}
-                onClick={handleStart}
-                type="button"
-              >
-                {isStarting
-                  ? `Starting Round ${introRoundNumber}...`
-                  : openingStage === 'loading'
-                    ? 'Preparing Introduction...'
-                    : openingStage === 'video' && showIntroVideo
-                      ? 'Finish Clip To Continue'
-                      : `Start Round ${introRoundNumber}`}
-              </Button>
-
-              {videoFailed && showIntroVideo ? (
-                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
-                  Intro clip failed to load. You can still continue.
-                </Badge>
-              ) : null}
-
-              {error ? (
-                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-xs text-destructive-foreground">
-                  {error}
-                </Badge>
-              ) : null}
-            </CardContent>
-          </Card>
-
+        <section className="grid gap-4">
           <HostEstablishingStage
             event={roundState?.escalation ?? roundState?.event ?? lobby.event}
             introVideo={lobby.introVideo}
@@ -305,10 +269,20 @@ function HostWaitingRoom() {
               setVideoFailed(true)
               setOpeningStage('briefing')
             }}
+            onStartRound={handleStart}
+            startRoundDisabled={isStarting || !canStartRoundOne}
+            startRoundLabel={startRoundLabel}
             scenarioTitle={lobby.scenarioTitle}
             showVideo={showIntroVideo}
             stage={openingStage}
+            error={error}
           />
+
+          {videoFailed && showIntroVideo ? (
+            <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
+              Intro clip failed to load. You can still continue.
+            </Badge>
+          ) : null}
         </section>
       </PageShell>
     )
@@ -593,6 +567,7 @@ function HostWaitingRoom() {
     const latestSentiments = sentimentAfter ?? roundState.sentiments
     const canPrepareNextRound =
       typeof roundState.roundNumber === 'number' && roundState.roundNumber < roundState.maxRounds
+    const nextRoundNumber = (roundState.roundNumber ?? 1) + 1
     const rankedSubmissions = roundState.submittedActions
       .slice()
       .sort((a, b) => {
@@ -605,121 +580,26 @@ function HostWaitingRoom() {
 
         return a.createdAtMs - b.createdAtMs
       })
-    const sentimentDeltaRows =
+    const sentimentDeltas =
       sentimentBefore && sentimentAfter
-        ? [
-          {
-            label: 'Stability',
-            delta: sentimentAfter.stability - sentimentBefore.stability,
-          },
-          {
-            label: 'Attention',
-            delta: sentimentAfter.attention - sentimentBefore.attention,
-          },
-          {
-            label: 'Curiosity',
-            delta: sentimentAfter.curiosity - sentimentBefore.curiosity,
-          },
-          {
-            label: 'Corporate Blame',
-            delta: sentimentAfter.corporate_blame - sentimentBefore.corporate_blame,
-          },
-          {
-            label: 'Government Blame',
-            delta: sentimentAfter.government_blame - sentimentBefore.government_blame,
-          },
-        ]
-        : []
+        ? {
+          stability: sentimentAfter.stability - sentimentBefore.stability,
+          attention: sentimentAfter.attention - sentimentBefore.attention,
+          curiosity: sentimentAfter.curiosity - sentimentBefore.curiosity,
+          corporate_blame: sentimentAfter.corporate_blame - sentimentBefore.corporate_blame,
+          government_blame: sentimentAfter.government_blame - sentimentBefore.government_blame,
+        }
+        : undefined
 
     return (
-      <PageShell
-        eyebrow="Main Display"
-        subtitle="Scoring and world resolution are complete."
-        title={`Round ${roundState.roundNumber ?? 1}: Results`}
-      >
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
-          <Card className="neo-panel gap-4 py-4">
-            <CardHeader className="gap-3 pb-0">
-              <CardTitle className="font-display text-3xl text-black">Round Snapshot</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pb-2">
-              <div className="neo-panel-soft p-4">
-                <p className="neo-label text-black/78">World State</p>
-                <p className="mt-2 text-base leading-relaxed text-black/92">{roundState.event}</p>
-              </div>
-
-              <Badge className="w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-xs text-black">
-                {roundState.submittedActions.length} submissions scored
-              </Badge>
-              {roundState.winningSubmissionId ? (
-                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
-                  Winning move resolved
-                </Badge>
-              ) : null}
-              {canPrepareNextRound ? (
-                <Button
-                  className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
-                  disabled={isAdvancingRound}
-                  onClick={handlePrepareNextRound}
-                  type="button"
-                >
-                  {isAdvancingRound
-                    ? `Preparing Round ${(roundState.roundNumber ?? 1) + 1}...`
-                    : `Start Round ${(roundState.roundNumber ?? 1) + 1} Introduction`}
-                </Button>
-              ) : (
-                <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
-                  Final round complete
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4">
-            <SentimentBars sentiments={latestSentiments} title="Latest Sentiment" />
-            {sentimentDeltaRows.length > 0 ? (
-              <Card className="neo-panel gap-3 py-4">
-                <CardHeader className="gap-1 pb-0">
-                  <CardTitle className="font-heading text-xl text-black">Movement</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2 pb-2">
-                  {sentimentDeltaRows.map((row) => {
-                    const roundedDelta = Math.round(row.delta * 10) / 10
-                    const deltaLabel =
-                      roundedDelta > 0
-                        ? `↑ +${roundedDelta}`
-                        : roundedDelta < 0
-                          ? `↓ ${roundedDelta}`
-                          : '→ 0'
-                    const toneClass =
-                      roundedDelta > 0
-                        ? 'bg-emerald-200 text-emerald-900'
-                        : roundedDelta < 0
-                          ? 'bg-rose-200 text-rose-900'
-                          : 'bg-white text-black'
-
-                    return (
-                      <Badge
-                        className={`rounded-full border border-black px-3 py-1 text-xs ${toneClass}`}
-                        key={row.label}
-                      >
-                        {row.label}: {deltaLabel}
-                      </Badge>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-            ) : null}
-          </div>
-        </section>
-
+      <PageShell>
         <Card className="neo-panel gap-4 py-4">
           <CardHeader className="gap-2 pb-0">
-            <CardTitle className="font-heading text-xl text-black">Winning Narrative</CardTitle>
+            <CardTitle className="font-heading text-2xl text-black">Winning Narrative</CardTitle>
           </CardHeader>
           <CardContent className="pb-2">
             {roundState.narrative ? (
-              <p className="whitespace-pre-line text-base leading-relaxed text-black/92">
+              <p className="whitespace-pre-line text-lg leading-relaxed text-black/92">
                 {roundState.narrative}
               </p>
             ) : (
@@ -736,50 +616,83 @@ function HostWaitingRoom() {
               </CardContent>
             </Card>
           ) : (
-            rankedSubmissions.map((submission, index) => (
-              <div className="flex items-stretch gap-3" key={submission.id}>
-                <div className="neo-panel-soft flex w-16 shrink-0 items-center justify-center px-2 py-3">
-                  <span className="font-display text-6xl leading-none text-black/35">{index + 1}</span>
+            <div
+              className={
+                rankedSubmissions.length === 1
+                  ? 'grid grid-cols-1 gap-3'
+                  : 'grid grid-cols-1 gap-3 lg:grid-cols-2'
+              }
+            >
+              {rankedSubmissions.map((submission, index) => (
+                <div className="flex items-stretch gap-3" key={submission.id}>
+                  <div className="neo-panel-soft flex w-16 shrink-0 items-center justify-center px-2 py-3">
+                    <span className="font-display text-6xl leading-none text-black/35">{index + 1}</span>
+                  </div>
+
+                  <Card
+                    className={
+                      submission.id === roundState.winningSubmissionId
+                        ? 'neo-panel flex-1 gap-4 border-2 border-black bg-amber-50 py-4'
+                        : 'neo-panel flex-1 gap-4 py-4'
+                    }
+                  >
+                    <CardHeader className="gap-2 pb-0">
+                      <CardTitle className="font-heading text-xl text-black">
+                      {factionNameById.get(submission.factionId) ?? 'Unknown Faction'} went with a <u>{submission.actionName}</u>
+                      </CardTitle>
+                      {submission.id === roundState.winningSubmissionId ? (
+                        <Badge className="w-fit rounded-full border border-black bg-green-300 px-2 py-0.5 text-md text-black">
+                          Winning Move
+                        </Badge>
+                      ) : null}
+                    </CardHeader>
+
+                    <CardContent className="space-y-3 pb-2">
+                      <div className="neo-panel-soft p-3">
+                        <p className="neo-label text-black/78">Submission</p>
+                        <p className="mt-2 text-lg font-bold text-black/92">{submission.content}</p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <Badge className="rounded-full border border-black bg-white px-2 py-1 text-base text-black">
+                          Quality: <span className="font-bold">{submission.effectiveness ?? 0}</span>
+                        </Badge>
+                        <Badge className="rounded-full border border-black bg-amber-300 px-2 py-1 text-base text-black">
+                          Impact: <span className="font-bold">{submission.impact ?? 0}</span>
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-
-                <Card
-                  className={
-                    submission.id === roundState.winningSubmissionId
-                      ? 'neo-panel flex-1 gap-4 border-2 border-black bg-amber-50 py-4'
-                      : 'neo-panel flex-1 gap-4 py-4'
-                  }
-                >
-                  <CardHeader className="gap-2 pb-0">
-                    <CardTitle className="font-heading text-xl text-black">
-                      {factionNameById.get(submission.factionId) ?? 'Unknown Faction'}
-                    </CardTitle>
-                    <p className="text-base text-black/90">{submission.actionName}</p>
-                    {submission.id === roundState.winningSubmissionId ? (
-                      <Badge className="w-fit rounded-full border border-black bg-amber-300 px-2 py-0.5 text-xs text-black">
-                        Winning Move
-                      </Badge>
-                    ) : null}
-                  </CardHeader>
-
-                  <CardContent className="space-y-3 pb-2">
-                    <div className="neo-panel-soft p-3">
-                      <p className="neo-label text-black/78">Submission</p>
-                      <p className="mt-2 text-base text-black/92">{submission.content}</p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className="rounded-full border border-black bg-white px-2 py-1 text-xs text-black">
-                        Effectiveness: {submission.effectiveness ?? 0}
-                      </Badge>
-                      <Badge className="rounded-full border border-black bg-amber-300 px-2 py-1 text-xs text-black">
-                        Impact: {submission.impact ?? 0}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ))
+              ))}
+            </div>
           )}
+        </section>
+
+        <section className="space-y-3">
+          <SentimentBars
+            deltas={sentimentDeltas}
+            footer={
+              canPrepareNextRound ? (
+                <Button
+                  className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em] animate-pulse"
+                  disabled={isAdvancingRound}
+                  onClick={handlePrepareNextRound}
+                  type="button"
+                >
+                  {isAdvancingRound
+                    ? `Preparing Round ${nextRoundNumber}...`
+                    : `Continue To Round ${nextRoundNumber}?`}
+                </Button>
+              ) : (
+                <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
+                  Final round complete
+                </Badge>
+              )
+            }
+            sentiments={latestSentiments}
+            title="Latest Sentiment"
+          />
         </section>
 
         {error ? (

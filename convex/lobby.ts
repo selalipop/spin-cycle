@@ -698,6 +698,24 @@ function chooseScenario(): {
     }
   }
 
+  if ((globalThis as any).process?.env?.NODE_ENV === 'development') {
+    const scenario = SCENARIOS.find((candidate) => candidate.id === 'raccoon_bank') as {
+      id: string
+      title: string
+      event: string
+      intro_video?: string
+    } | undefined
+
+    if (scenario) {
+      return {
+        id: scenario.id,
+        title: scenario.title,
+        event: scenario.event,
+        intro_video: scenario.intro_video ?? 'scenarios/golden_gate.mp4',
+      }
+    }
+  }
+
   const index = Math.floor(Math.random() * SCENARIOS.length)
   const scenario = SCENARIOS[index] as {
     id: string

@@ -57,11 +57,11 @@ function PlayerRoundResultsPhaseRoute() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <Badge className="rounded-full border border-black bg-white px-3 py-1 text-xs text-black">
-                  Effectiveness: {submission.effectiveness ?? 0}
+                <Badge className="rounded-full border border-black bg-white px-3 py-1 text-base text-black">
+                  Quality: <span className="font-bold">{submission.effectiveness ?? 0}</span>
                 </Badge>
-                <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-xs text-black">
-                  Impact: {submission.impact ?? 0}
+                <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-base text-black">
+                  Impact: <span className="font-bold">{submission.impact ?? 0}</span>
                 </Badge>
               </div>
 
