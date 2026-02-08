@@ -208,7 +208,7 @@ export default defineSchema({
     /** Public UUID used in browser URLs, e.g. /game/:gameId/player/:playerId. */
     public_id: v.string(),
     name: v.string(),
-    /** Public avatar image path from the built-in set, e.g. /avatars/avatar_1.png. */
+    /** Public avatar image path from the built-in set, e.g. /avatars/avatar_1.avif. */
     avatar: v.string(),
 
     /**

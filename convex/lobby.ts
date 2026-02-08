@@ -19,7 +19,7 @@ const INITIAL_SENTIMENTS = {
 const JOIN_CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 const JOIN_CODE_LENGTH = 5
 const MAX_PLAYER_NAME_LENGTH = 24
-const AVATAR_PATH_PATTERN = /^\/avatars\/avatar_(?:[1-9]|1[0-3])\.png$/
+const AVATAR_PATH_PATTERN = /^\/avatars\/avatar_(?:[1-9]|1[0-3])\.avif$/
 
 const playerSummary = v.object({
   id: v.string(),
@@ -77,6 +77,30 @@ export const createGame = mutation({
       gameId: publicGameId,
       joinCode,
     }
+  },
+})
+
+export const generateAvatarUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    return ctx.storage.generateUploadUrl()
+  },
+})
+
+export const getAvatarUrl = mutation({
+  args: {
+    storageId: v.id('_storage'),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const avatarUrl = await ctx.storage.getUrl(args.storageId)
+
+    if (!avatarUrl) {
+      throw new ConvexError('Uploaded avatar not found')
+    }
+
+    return avatarUrl
   },
 })
 
@@ -652,11 +676,21 @@ function normalizePlayerName(value: string): string {
 function normalizeAvatar(value: string): string {
   const trimmed = value.trim()
 
-  if (!AVATAR_PATH_PATTERN.test(trimmed)) {
-    throw new ConvexError('Invalid avatar selection')
+  if (AVATAR_PATH_PATTERN.test(trimmed)) {
+    return trimmed
   }
 
-  return trimmed
+  try {
+    const parsed = new URL(trimmed)
+
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString()
+    }
+  } catch {
+    // fall through to error below
+  }
+
+  throw new ConvexError('Invalid avatar selection')
 }
 
 function normalizeEscalationEvent(value: string): string {

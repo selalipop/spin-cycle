@@ -63,7 +63,7 @@ function Home() {
               Set up a room and run the show.
             </CardDescription>
           </CardHeader>
-          <img src="/splash.png" alt="Spin Cycle Logo" className="w-full max-w-120 mx-auto" />
+          <img src="/splash.avif" alt="Spin Cycle Logo" className="w-full max-w-120 mx-auto" />
 
           <CardContent className="space-y-4 pb-2">
             <Button

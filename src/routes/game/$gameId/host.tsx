@@ -37,6 +37,7 @@ function HostWaitingRoom() {
   const [isAdvancingRound, setIsAdvancingRound] = useState(false)
   const [videoFailed, setVideoFailed] = useState(false)
   const [openingStage, setOpeningStage] = useState<OpeningStage>('loading')
+  const [introVideoEnded, setIntroVideoEnded] = useState(false)
   const [planningStatus, setPlanningStatus] = useState<'idle' | 'running' | 'ready' | 'error'>(
     'idle',
   )
@@ -51,6 +52,7 @@ function HostWaitingRoom() {
     if (!lobby || lobby.phase !== 'game_introduction') {
       setOpeningStage('loading')
       setVideoFailed(false)
+      setIntroVideoEnded(false)
       return
     }
 
@@ -59,6 +61,7 @@ function HostWaitingRoom() {
     const hasScenarioIntroVideo = Boolean(lobby.introVideo) && isRoundOneIntro
 
     setVideoFailed(false)
+    setIntroVideoEnded(false)
     if (!isRoundOneIntro) {
       if (roundState?.introVideoUrl) {
         setOpeningStage('video')
@@ -107,10 +110,10 @@ function HostWaitingRoom() {
       return
     }
 
-    let cancelled = false
+    const cancelled = { current: false }
 
     const resolveVideo = async () => {
-      if (cancelled || introVideoResolveInFlightRef.current) {
+      if (cancelled.current || introVideoResolveInFlightRef.current) {
         return
       }
 
@@ -119,15 +122,13 @@ function HostWaitingRoom() {
       try {
         const result = await resolveRoundIntroVideo({ gameId: roundState.gameId })
 
-        if (!cancelled && result.status === 'failed') {
+        if (result.status === 'failed') {
           setVideoFailed(true)
           setOpeningStage('briefing')
         }
       } catch {
-        if (!cancelled) {
-          setVideoFailed(true)
-          setOpeningStage('briefing')
-        }
+        setVideoFailed(true)
+        setOpeningStage('briefing')
       } finally {
         introVideoResolveInFlightRef.current = false
       }
@@ -139,7 +140,7 @@ function HostWaitingRoom() {
     }, 3_000)
 
     return () => {
-      cancelled = true
+      cancelled.current = true
       window.clearInterval(timer)
     }
   }, [
@@ -260,8 +261,17 @@ function HostWaitingRoom() {
       return
     }
 
-    if (lobby.phase === 'game_introduction' && openingStage !== 'briefing') {
-      return
+    if (lobby.phase === 'game_introduction') {
+      const introRoundNumber = (roundState?.roundNumber ?? 0) + 1
+      const hasIntroVideo =
+        introRoundNumber === 1 ? Boolean(lobby.introVideo) : Boolean(roundState?.introVideoUrl)
+      const canStartIntroductionRound =
+        openingStage === 'briefing' ||
+        (openingStage === 'video' && (!hasIntroVideo || introVideoEnded))
+
+      if (!canStartIntroductionRound) {
+        return
+      }
     }
 
     setError(null)
@@ -336,7 +346,8 @@ function HostWaitingRoom() {
       ? Boolean(lobby.introVideo)
       : Boolean(roundState?.introVideoUrl)
     const introVideoSrc = isRoundOneIntro ? lobby.introVideo : (roundState?.introVideoUrl ?? '')
-    const canStartRound = openingStage === 'briefing'
+    const canStartRound =
+      openingStage === 'briefing' || (openingStage === 'video' && showIntroVideo && introVideoEnded)
     const startRoundLabel = isStarting
       ? `Starting Round ${introRoundNumber}...`
       : `Start Round ${introRoundNumber}`
@@ -350,17 +361,20 @@ function HostWaitingRoom() {
           <HostEstablishingStage
             event={roundState?.escalation ?? roundState?.event ?? lobby.event}
             introVideo={introVideoSrc}
-            onVideoEnded={() => setOpeningStage('briefing')}
+            onVideoEnded={() => setIntroVideoEnded(true)}
             onVideoError={() => {
               setVideoFailed(true)
               setOpeningStage('briefing')
+              setIntroVideoEnded(false)
             }}
+            onWatchAgain={() => setIntroVideoEnded(false)}
             onStartRound={handleStart}
             startRoundDisabled={isStarting || !canStartRound}
             startRoundLabel={startRoundLabel}
             scenarioTitle={lobby.scenarioTitle}
             showVideo={showIntroVideo}
             stage={openingStage}
+            videoCompleted={introVideoEnded}
             error={error}
           />
 

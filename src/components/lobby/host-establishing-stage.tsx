@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { RotateCcw } from 'lucide-react'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/components/ui/card'
@@ -13,6 +15,8 @@ export function HostEstablishingStage({
   showVideo,
   onVideoEnded,
   onVideoError,
+  onWatchAgain,
+  videoCompleted,
   startRoundLabel,
   startRoundDisabled,
   onStartRound,
@@ -25,11 +29,28 @@ export function HostEstablishingStage({
   showVideo: boolean
   onVideoEnded: () => void
   onVideoError: () => void
+  onWatchAgain: () => void
+  videoCompleted: boolean
   startRoundLabel?: string
   startRoundDisabled?: boolean
   onStartRound?: () => void
   error?: string | null
 }) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  const handleWatchAgain = () => {
+    const video = videoRef.current
+    if (!video) {
+      return
+    }
+
+    onWatchAgain()
+    video.currentTime = 0
+    void video.play().catch(() => {
+      // If autoplay is blocked, controls remain available for manual playback.
+    })
+  }
+
   if (stage === 'loading') {
     return (
       <Card className="neo-panel py-0">
@@ -58,23 +79,53 @@ export function HostEstablishingStage({
           <CardTitle className="font-display text-3xl text-black sm:text-4xl">{scenarioTitle}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <video
-            autoPlay
-            className="w-full rounded-xl border-2 border-black bg-black"
-            controls
-            onEnded={onVideoEnded}
-            onError={onVideoError}
-            playsInline
-          >
-            <source src={videoSrc} type="video/mp4" />
-          </video>
+          <div className="relative overflow-hidden rounded-xl border-2 border-black bg-black">
+            <video
+              autoPlay
+              className="block w-full"
+              controls
+              ref={videoRef}
+              onEnded={onVideoEnded}
+              onError={onVideoError}
+              playsInline
+            >
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+            {videoCompleted ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/22">
+                <div className="pointer-events-auto flex flex-col items-center gap-2">
+                  <Button
+                    aria-label="Watch again"
+                    className="h-16 w-16 rounded-full border-2 border-black bg-white text-black hover:bg-white/90"
+                    onClick={handleWatchAgain}
+                    type="button"
+                  >
+                    <RotateCcw className="size-6" />
+                  </Button>
+                  <p className="font-heading text-xs uppercase tracking-[0.08em] text-white">Watch Again</p>
+                </div>
+              </div>
+            ) : null}
+          </div>
           <div className="neo-panel-soft reel-panel p-4">
             <p className="neo-label text-black/78">Escalation</p>
             <p className="reel-text mt-2 text-black ">{event}</p>
           </div>
           <p className="text-base text-black/90">
-            Once the clip ends, you can start the round.
+            {videoCompleted
+              ? 'The clip is paused on the last frame. Watch again or start the round.'
+              : 'Once the clip ends, you can start the round.'}
           </p>
+          {videoCompleted && onStartRound ? (
+            <Button
+              className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
+              disabled={startRoundDisabled}
+              onClick={onStartRound}
+              type="button"
+            >
+              {startRoundLabel ?? 'Start Round'}
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
     )

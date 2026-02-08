@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
+import Resizer from 'react-image-file-resizer'
 import { api } from '../../../convex/_generated/api'
 import type { Id } from '../../../convex/_generated/dataModel'
 import { AvatarPicker } from '~/components/lobby/avatar-picker'
@@ -31,15 +32,55 @@ function shuffle<T>(values: Array<T>): Array<T> {
   return shuffled
 }
 
+function resizeAvatarImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const compressFormat: 'JPEG' | 'PNG' | 'WEBP' = file.type === 'image/png'
+      ? 'PNG'
+      : file.type === 'image/webp'
+        ? 'WEBP'
+        : 'JPEG'
+
+    Resizer.imageFileResizer(
+      file,
+      600,
+      600,
+      compressFormat,
+      90,
+      0,
+      (resizedImage) => {
+        if (resizedImage instanceof File) {
+          resolve(resizedImage)
+          return
+        }
+
+        if (resizedImage instanceof Blob) {
+          resolve(
+            new File([resizedImage], file.name, {
+              type: resizedImage.type || file.type || 'image/jpeg',
+            }),
+          )
+          return
+        }
+
+        reject(new Error('Invalid resized image output'))
+      },
+      'file',
+    )
+  })
+}
+
 function JoinGamePage() {
   const { joinCode } = Route.useParams()
 
   const normalizedJoinCode = useMemo(() => joinCode.trim().toUpperCase(), [joinCode])
   const game = useQuery(api.lobby.getGameByJoinCode, { joinCode: normalizedJoinCode })
   const joinGame = useMutation(api.lobby.joinGame)
+  const generateAvatarUploadUrl = useMutation(api.lobby.generateAvatarUploadUrl)
+  const getAvatarUrl = useMutation(api.lobby.getAvatarUrl)
 
   const [playerName, setPlayerName] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [selectedFactionId, setSelectedFactionId] = useState<Id<'factions'> | null>(null)
   const [shuffledFactionIds, setShuffledFactionIds] = useState<Array<Id<'factions'>>>([])
   const [isJoining, setIsJoining] = useState(false)
@@ -101,6 +142,45 @@ function JoinGamePage() {
 
     return orderedFactions.length === factions.length ? orderedFactions : factions
   }, [factions, shuffledFactionIds])
+
+  const handleUploadFromDevice = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.')
+      return
+    }
+
+    setError(null)
+    setIsUploadingAvatar(true)
+
+    try {
+      const resizedFile = await resizeAvatarImage(file)
+      const uploadUrl = await generateAvatarUploadUrl()
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': resizedFile.type || 'application/octet-stream',
+        },
+        body: resizedFile,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const uploadPayload = await uploadResponse.json() as { storageId?: Id<'_storage'> }
+
+      if (!uploadPayload.storageId) {
+        throw new Error('Storage id missing')
+      }
+
+      const uploadedAvatarUrl = await getAvatarUrl({ storageId: uploadPayload.storageId })
+      setAvatar(uploadedAvatarUrl)
+    } catch {
+      setError('Could not upload avatar right now. Try a different image or retry.')
+    } finally {
+      setIsUploadingAvatar(false)
+    }
+  }
 
   const handleJoin = async () => {
     if (!game) {
@@ -205,11 +285,16 @@ function JoinGamePage() {
               value={playerName}
             />
 
-            <AvatarPicker onChange={setAvatar} value={avatar} />
+            <AvatarPicker
+              isUploadingFromDevice={isUploadingAvatar}
+              onChange={setAvatar}
+              onUploadFromDevice={handleUploadFromDevice}
+              value={avatar}
+            />
 
             <Button
               className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
-              disabled={isJoining || !canJoinTeam}
+              disabled={isJoining || isUploadingAvatar || !canJoinTeam}
               onClick={handleJoin}
               type="button"
             >
