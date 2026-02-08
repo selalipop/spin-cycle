@@ -4,6 +4,7 @@ import { OpenRouter } from '@openrouter/sdk'
 import { Liquid } from 'liquidjs'
 import { internal } from './_generated/api'
 import { GamePhase, gamePhase } from './game_phase'
+import { FACTIONS, SCENARIOS } from './game_data'
 import {
 
 
@@ -21,8 +22,8 @@ import {
 import type { MutationCtx, QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel'
 
-const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-4.5'
-const SUBMITTING_DURATION_MS = 60_000
+const DEFAULT_OPENROUTER_MODEL = 'google/gemini-3-flash-preview'
+const SUBMITTING_DURATION_MS = 120_000
 const MAX_SUBMISSION_CONTENT_LENGTH = 1800
 
 const sentiments = v.object({
@@ -62,6 +63,18 @@ const factionPlayer = v.object({
 const brief = v.object({
   goal: v.string(),
   briefing: v.string(),
+})
+
+const factionGenerationScenario = v.object({
+  id: v.string(),
+  title: v.string(),
+  event: v.string(),
+})
+
+const factionGenerationFaction = v.object({
+  code: v.string(),
+  name: v.string(),
+  description: v.string(),
 })
 
 const participatingFactionStatus = v.object({
@@ -789,6 +802,144 @@ export const processRoundSubmissions = action({
   },
 })
 
+export const getFactionGenerationDebugSettings = query({
+  args: {},
+  returns: v.object({
+    scenarios: v.array(factionGenerationScenario),
+    factions: v.array(factionGenerationFaction),
+  }),
+  handler: () => {
+    return {
+      scenarios: SCENARIOS.map((scenario) => ({
+        id: scenario.id,
+        title: scenario.title,
+        event: scenario.event,
+      })),
+      factions: FACTIONS.map((faction) => ({
+        code: faction.code,
+        name: faction.name,
+        description: faction.description,
+      })),
+    }
+  },
+})
+
+export const generateFactionBriefDebug = action({
+  args: {
+    scenarioId: v.string(),
+    factionCode: v.string(),
+  },
+  returns: v.object({
+    scenarioId: v.string(),
+    scenarioTitle: v.string(),
+    event: v.string(),
+    factionCode: v.string(),
+    factionName: v.string(),
+    model: v.string(),
+    goal: v.string(),
+    briefing: v.string(),
+  }),
+  handler: async (_ctx, args) => {
+    const scenario = SCENARIOS.find((candidate) => candidate.id === args.scenarioId)
+
+    if (!scenario) {
+      throw new ConvexError('Scenario not found')
+    }
+
+    const faction = FACTIONS.find((candidate) => candidate.code === args.factionCode)
+
+    if (!faction) {
+      throw new ConvexError('Faction not found')
+    }
+
+    const openRouterApiKey = getEnvironmentVariable('OPENROUTER_API_KEY')
+
+    if (!openRouterApiKey) {
+      throw new ConvexError('OPENROUTER_API_KEY is required for briefing generation')
+    }
+
+    const openRouterModel =
+      getEnvironmentVariable('OPENROUTER_MODEL') || DEFAULT_OPENROUTER_MODEL
+    const openRouter = new OpenRouter({ apiKey: openRouterApiKey })
+    const liquid = new Liquid()
+    const defaultSentiments = getDefaultSentiments()
+    const templateVars = {
+      scenario_title: scenario.title,
+      event: scenario.event,
+      round_number: 1,
+      max_rounds: 4,
+      sentiments: formatSentiments(defaultSentiments),
+      faction_name: faction.name,
+      faction_description: faction.description,
+      faction_voice: faction.archetype,
+      faction_scoring: formatScoring(faction.scoring, defaultSentiments),
+      team_size: 1,
+    }
+    const systemPrompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF_SYSTEM, templateVars)
+    const userPrompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF_USER, templateVars)
+
+    const generated = await retry(async () => {
+      const response = await openRouter.chat.send({
+        chatGenerationParams: {
+          model: openRouterModel,
+          stream: false,
+          temperature: 0.6,
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            jsonSchema: {
+              name: 'faction_brief',
+              strict: true,
+              schema: {
+                type: 'object',
+                additionalProperties: false,
+                required: ['goal', 'briefing'],
+                properties: {
+                  goal: { type: 'string' },
+                  briefing: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      })
+
+      const parsed = parseFactionBrief(extractAssistantText(response))
+
+      if (!parsed) {
+        throw new Error('Model did not return a valid faction brief payload')
+      }
+
+      return normalizeBrief(parsed)
+    }, {
+      maxAttempts: 3,
+      delay: 500,
+      factor: 2,
+      maxDelay: 2_500,
+    })
+
+    return {
+      scenarioId: scenario.id,
+      scenarioTitle: scenario.title,
+      event: scenario.event,
+      factionCode: faction.code,
+      factionName: faction.name,
+      model: openRouterModel,
+      goal: generated.goal,
+      briefing: generated.briefing,
+    }
+  },
+})
+
 export const generatePlanningBriefings = action({
   args: {
     gameId: v.string(),
@@ -830,7 +981,7 @@ export const generatePlanningBriefings = action({
         sentiments: sentimentsText,
         faction_name: faction.name,
         faction_description: faction.description,
-        faction_archetype: faction.archetype,
+        faction_voice: faction.archetype,
         faction_scoring: formatScoring(faction.scoring, begin.sentiments),
         team_size: faction.teamSize,
       }
@@ -853,6 +1004,10 @@ export const generatePlanningBriefings = action({
                 content: userPrompt,
               },
             ],
+            reasoning: {
+              enabled: true,
+              effort: "xhigh",
+            } as any,
             responseFormat: {
               type: 'json_schema',
               jsonSchema: {
@@ -863,8 +1018,11 @@ export const generatePlanningBriefings = action({
                   additionalProperties: false,
                   required: ['goal', 'briefing'],
                   properties: {
+                    briefing: {
+                      type: 'string'
+                      , description: 'The briefing is an in-world message from faction leadership to the team.'
+                    },
                     goal: { type: 'string' },
-                    briefing: { type: 'string' },
                   },
                 },
               },
@@ -1663,8 +1821,6 @@ function buildSubmissionScoreSchema(
       criterionName,
       {
         type: 'number',
-        minimum: 0,
-        maximum: 10,
       },
     ]),
   )
@@ -1862,22 +2018,6 @@ function formatScoring(
 }
 
 
-
-function summarizeSentimentPreference(values: Array<number>): string {
-  const labels = ['low', 'medium', 'high', 'max']
-  let bestIndex = 0
-
-  for (let index = 1; index < values.length; index += 1) {
-    if ((values[index] ?? -Infinity) > (values[bestIndex] ?? -Infinity)) {
-      bestIndex = index
-    }
-  }
-
-  const label = labels[bestIndex] ?? 'medium'
-  const score = values[bestIndex] ?? 0
-
-  return `prefers ${label} (${score})`
-}
 
 function formatSentiments(sentiments: {
   stability: number

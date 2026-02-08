@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as JoinJoinCodeRouteImport } from './routes/join/$joinCode'
+import { Route as DebugFactionGenerationRouteImport } from './routes/debug/faction-generation'
 import { Route as GameGameIdHostRouteImport } from './routes/game/$gameId/host'
 import { Route as GameGameIdPlayerPlayerIdRouteImport } from './routes/game/$gameId/player/$playerId'
 import { Route as GameGameIdPlayerPlayerIdIndexRouteImport } from './routes/game/$gameId/player/$playerId.index'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const JoinJoinCodeRoute = JoinJoinCodeRouteImport.update({
   id: '/join/$joinCode',
   path: '/join/$joinCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugFactionGenerationRoute = DebugFactionGenerationRouteImport.update({
+  id: '/debug/faction-generation',
+  path: '/debug/faction-generation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GameGameIdHostRoute = GameGameIdHostRouteImport.update({
@@ -87,6 +93,7 @@ const GameGameIdPlayerPlayerIdIntermissionRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/debug/faction-generation': typeof DebugFactionGenerationRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
   '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRouteWithChildren
@@ -100,6 +107,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/debug/faction-generation': typeof DebugFactionGenerationRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
   '/game/$gameId/player/$playerId/intermission': typeof GameGameIdPlayerPlayerIdIntermissionRoute
@@ -113,6 +121,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/debug/faction-generation': typeof DebugFactionGenerationRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
   '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRouteWithChildren
@@ -128,6 +137,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/debug/faction-generation'
     | '/join/$joinCode'
     | '/game/$gameId/host'
     | '/game/$gameId/player/$playerId'
@@ -141,6 +151,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/debug/faction-generation'
     | '/join/$joinCode'
     | '/game/$gameId/host'
     | '/game/$gameId/player/$playerId/intermission'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/debug/faction-generation'
     | '/join/$joinCode'
     | '/game/$gameId/host'
     | '/game/$gameId/player/$playerId'
@@ -167,6 +179,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DebugFactionGenerationRoute: typeof DebugFactionGenerationRoute
   JoinJoinCodeRoute: typeof JoinJoinCodeRoute
   GameGameIdHostRoute: typeof GameGameIdHostRoute
   GameGameIdPlayerPlayerIdRoute: typeof GameGameIdPlayerPlayerIdRouteWithChildren
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/join/$joinCode'
       fullPath: '/join/$joinCode'
       preLoaderRoute: typeof JoinJoinCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/faction-generation': {
+      id: '/debug/faction-generation'
+      path: '/debug/faction-generation'
+      fullPath: '/debug/faction-generation'
+      preLoaderRoute: typeof DebugFactionGenerationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/game/$gameId/host': {
@@ -288,6 +308,7 @@ const GameGameIdPlayerPlayerIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DebugFactionGenerationRoute: DebugFactionGenerationRoute,
   JoinJoinCodeRoute: JoinJoinCodeRoute,
   GameGameIdHostRoute: GameGameIdHostRoute,
   GameGameIdPlayerPlayerIdRoute: GameGameIdPlayerPlayerIdRouteWithChildren,

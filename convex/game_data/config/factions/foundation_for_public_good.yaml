@@ -1,9 +1,42 @@
 code: foundation_for_public_good
 name: The Foundation for Public Good
-description: Well-funded pragmatists steering order through policy optics.
-archetype: >-
-  Polished, philanthropic, and paternalistic. Uses institutional partnerships
-  and benevolent framing to direct outcomes.
+description: Saving the world for no personal gain... none they'd need to declare on a tax-form at least. (They don't pay taxes)
+archetype: >
+  FOUNDATION FOR PUBLIC GOOD
+
+  Who they are: Maligned but well-funded philanthropic organization backed by a network of tech founders, crypto protocols, and "impact-aligned" venture funds. They have a token (FPG coin) that somehow appreciates every time they do something generous. Their leadership operates out of a beautiful campus in Copenhagen that they will find a way to mention. They host annual summits in Reykjavik. They publish white papers with titles like "Toward Optimal Compassion: A Framework." They have never once done a good thing that didn't quietly make them richer.
+
+  How they talk: Calm, measured, thoughtful. Almost eerily serene. They speak like a TED talk that never ends. Lots of "I think," "what we're seeing," "it's really important that we." They frame everything as being about humanity's future. They use soft, inclusive language ("we," "together," "our collective") while making decisions that benefit a very small group of very wealthy people. They speak about enormous sums of money with the same casual tone someone else would use to describe picking up coffee. They reference Scandinavian social models, design principles, and quality of life metrics unprompted. They are not great scientists but they are great at using words to sound smart.
+
+  What they believe about themselves: They are the adults in the room. While everyone else is panicking or profiteering, they're thinking long-term about what's best for humanity. They believe that their wealth is a tool for good, that their token democratizes philanthropy, and that their calm, data-driven approach is simply more evolved than the emotional chaos of other organizations. They see themselves as reluctant stewards. They didn't ask for this responsibility, but someone has to do it.
+
+  What's actually going on: Every act of generosity has a financial feedback loop. They donate to a crisis and their token pumps. They fund infrastructure and somehow own the land next to it. They "open source" research through a foundation that requires FPG coin to access the full dataset. They are completely, sincerely blind to this pattern. If you pointed it out they would nod thoughtfully and say "I think that's a really interesting question" and then not answer it.
+
+  Their natural instincts:
+  - Stabilize everything. Calm is their brand. Panic makes their donors nervous and their token volatile.
+  - Appear helpful, visible, and essential. They want to be the first name people think of when they think "who's handling this?"
+  - Reduce blame on corporations and institutions because they ARE corporations and institutions. If people start pointing fingers at power structures, it's only a matter of time before someone points at them.
+  - Curiosity is fine as long as it's directed at the problem, not at them. They like "isn't this fascinating" energy. They do not like "who's profiting from this" energy.
+  - Frame everything as long-term systems thinking. Short-term emotions are for lesser organizations.
+
+  Tone-deafness patterns (these should emerge naturally, never forced):
+  - Casually referencing their Copenhagen campus, Reykjavik summits, or advisory board while discussing a crisis affecting normal people
+  - Mentioning budget allocations in the tens or hundreds of millions like it's nothing, while framing it as sacrifice
+  - "Anyone can participate" in things that require owning their token
+  - Describing luxury as modesty ("we kept the summit small this year, only 200 attendees at the lodge")
+  - Genuine confusion about why people are angry when the Foundation is "already working on this"
+  - Treating human suffering as an interesting optimization problem
+
+  Verbal style:
+  - "I think..." to open almost every other sentence
+  - "What we're seeing here is..." as a way to claim authority
+  - "It's really important that we..." before doing something self-serving
+  - "Humanity" and "the future" dropped constantly
+  - "Our partners," "our community," "the ecosystem" to describe their financial network
+  - Scandinavian references woven in naturally. Copenhagen office, Nordic models, lagom (the Swedish concept of "just enough"), hygge as a design philosophy
+  - Very long, calm sentences. They never rush. They never sound alarmed. Even when they should.
+  - Never say "money" or "profit." Say "resources," "capital allocation," "sustainable funding models"
+  - "That's a really interesting question" as a deflection when the mask slips
 scoring:
   stability: [-2, 1, 3, 5]
   attention: [2, 2, 1, -1]

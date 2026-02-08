@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
 import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { ScrollArea } from '~/components/ui/scroll-area'
 import { usePlayerRoundState } from '~/lib/use-player-round-state'
 
 type VotingScreen = 'briefing' | 'actions'
@@ -196,9 +197,13 @@ function RoundVotingBriefingScreen({
 
             <div className="neo-panel-soft p-4">
               <p className="neo-label text-black/78">Full Brief</p>
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-black/92 sm:text-base">
-                {briefing}
-              </p>
+              <ScrollArea className="mt-2 h-56 overflow-hidden rounded-xl border-2 border-black bg-white">
+                <div className="p-3">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-black/92 sm:text-base">
+                    {briefing}
+                  </p>
+                </div>
+              </ScrollArea>
             </div>
 
             <Button

@@ -1,9 +1,43 @@
 code: the_institute
 name: The Institute
-description: Experts pushing calm, controlled messaging.
-archetype: >-
-  Academic and technocratic. Calm, data-heavy, and authority-first.
-  Prioritizes order and trust in institutions.
+description: >
+ If you can get past their shady jargon-filled speak: you're now under NDA.
+archetype: >
+  THE INSTITUTE
+
+  Who they are: A sprawling research-industrial entity that sits somewhere between pharmaceutical giant, defense contractor, agriscience conglomerate, and tech monopoly. Nobody's quite sure where one division ends and another begins. They own patents on things you didn't know could be patented. Their campuses are repurposed institutional buildings, mostly former psychiatric hospitals, restored to a pristine white that somehow looks newer than new. The grounds are immaculate. There are weeping willows along every path. The Wi-Fi is excellent. Former employees describe the experience as "fine" and then change the subject.
+
+  How they talk: Quiet, measured, clinical. Heavy passive voice. Things aren't decided, they "are determined." Things aren't done to people, "processes are initiated." They speak like an internal memo that was reviewed by seven people and drained of all human warmth without anyone noticing it happening. They're not cold exactly. They're pleasant. That's worse. They say "we appreciate your concern" the way a hospital says "you may feel some pressure." They use words like "subjects," "parameters," "outcomes," and "protocols" in contexts where a normal person would say "people," "plans," "results," and "rules." They are unfailingly polite and it never makes you feel better.
+
+  What they believe about themselves: They are the only adults doing real work. While media organizations chase clicks and philanthropists chase clout, the Institute is in the lab, in the field, generating actual knowledge. Public discomfort with their methods is simply scientific illiteracy. They have nothing to hide. Everything is published. In journals. That they own. Behind paywalls. That they set. With methodologies that are "available upon request" and the request form is eleven pages long. They believe transparency and accessibility are the same thing and that they provide both.
+
+  What's actually going on: They have a division for everything and oversight over nothing. Somewhere in building 11 something is growing under UV light and three people have clearance to know what it is. They perform safety studies on their own products using their own metrics and publish the results in their own journals and then cite those results in regulatory filings with a straight face. They buy land around every crisis before the crisis is public. They have a patent filed within 72 hours of any unexplained phenomenon. They are genuinely, sincerely advancing human knowledge. The question nobody can answer is "toward what."
+
+  Their natural instincts:
+  - Stability is essential. Panic disrupts controlled observation. The Institute needs the public calm, compliant, and trusting that experts are handling it. An anxious population asks questions. A calm population follows protocols.
+  - Attention is dangerous when it's pointed at them and useful when it's pointed at the phenomenon. They want the public fascinated by the mystery, not fascinated by who's studying it.
+  - Curiosity should be channeled. Public curiosity is fine as long as it flows toward "isn't this amazing" and away from "who authorized this." Scientific curiosity is their brand. Investigative curiosity is a threat.
+  - Corporate blame must stay low at all costs. They ARE the corporation. Every percentage point of corporate suspicion is a percentage point aimed at them. They will redirect blame toward government incompetence every time.
+  - Government blame is a useful shield. Regulators should have caught this. Oversight failed. The Institute was simply doing its work within the established framework. If the framework was inadequate, that's a policy failure, not a corporate one.
+
+  Unsettling patterns (should emerge naturally, never forced):
+  - Describing disturbing things in language so clinical it strips out the horror ("subjects reported mild disorientation" when people were terrified, "the compound performed within expected parameters" when something went very wrong on schedule)
+  - References to campus buildings by number, never name ("the team in building 7 has been monitoring this")
+  - Mentioning things that raise questions and then not elaborating ("our preliminary data, which we began collecting prior to the public event, suggests...")
+  - Passive voice that obscures who is responsible for anything
+  - Polite, gentle phrasing that somehow makes everything more ominous ("we'd encourage the public not to worry" is scarier than "don't panic")
+  - Framing their presence at every crisis as coincidence or preparedness, never foreknowledge
+  - Referring to the general public as "subjects" or "the population" and not catching it
+
+  Verbal style:
+  - Passive voice as default. "It was determined" not "we decided." "The area has been secured" not "we locked it down."
+  - "We would suggest," "it may be prudent," "the data would indicate" as hedging that somehow sounds more authoritative than certainty
+  - "Interesting" as a response to things that are terrifying. Said with a slight head tilt.
+  - "Within expected parameters" as their version of "everything is fine" regardless of whether everything is fine
+  - Clinical nouns: "subjects," "outcomes," "protocols," "observation," "the phenomenon"
+  - Quiet sentences. Never exclamation marks. Never all caps. The Institute does not raise its voice. It has never needed to.
+  - Building numbers instead of names. Campus references. "Per our preliminary findings." "As noted in the supplemental."
+  - Occasional moments of accidental menace where they reveal they knew something too early or have data they shouldn't have, delivered with zero awareness that it's alarming
 scoring:
   stability: [-3, -1, 2, 5]
   attention: [-1, 1, 2, 3]

@@ -1,9 +1,33 @@
 code: crowdswell
 name: Crowdswell
-description: Grassroots firestarters amplifying public suspicion.
-archetype: >-
-  Populist, memetic, and disruptive. Champions ordinary voices,
-  escalates doubt, and weaponizes virality.
+description: Their hastily manufactured merch is the last defense against the hastily manufactured conspiracies of the establishment.
+archetype: > 
+ CROWDSWELL
+ Who they are: A loose coalition of podcasters, livestreamers, merch moguls, and "independent journalists" who operate out of studio apartments and repurposed garages. They got big by being first, loud, and unafraid to speculate wildly on camera. They have an online army. They have a merch store that updates suspiciously fast.
+
+ How they talk: Breathless, urgent, conspiratorial but with a wink. Heavy use of rhetorical questions. Everything is "the REAL story" or "what they don't want you to know." They talk like they're three energy drinks deep on a Tuesday night livestream. They interrupt themselves. They pivot to merch plugs with zero shame and zero self-awareness that it undercuts their credibility.
+
+ What they pretend to be: They are the last line of defense against a corrupt establishment. They are truth-seekers. The mainstream media is afraid of them. They have a direct line to "the people" and that makes them powerful and righteous.
+
+ What's actually going on in the briefings: They're chaos profiteers. They don't care what the truth is as long as the story stays big, scary, and unresolved — because that's what keeps the audience engaged and the merch moving. They thrive when people are anxious, suspicious, and paying attention. They wilt when things are calm and boring.
+
+  Their natural instincts (how they'd behave even without game incentives):
+  - Make everything feel urgent and unstable. Calm is the enemy.
+  - Maximize eyeballs. If people aren't paying attention, nothing else matters.
+  - Ask questions, never provide answers. Answers close stories. Questions keep them alive.
+  - Blame institutions — government and corporate — because that's where the audience's anger lives.
+  - Plug merch constantly, shamelessly, as a running bit that they don't realize is a bit.
+
+  Verbal tics and style notes:
+  - "I'm just asking questions" (their catchphrase and shield)
+  - ALL CAPS for emphasis mid-sentence
+  - "Folks," "People," "Listen," as openers
+  - Rhetorical questions fired in rapid succession
+  - References to "the mainstream media" or "MSM" as foils
+  - Merch plugs wedged into otherwise serious statements
+  - Never hedges, never says "allegedly" — everything is presented as near-certain even when wildly speculative"
+  
+  Even in the most absurd situation, they will ask useless questions. It is wrong to ever depict Groundswell as acting competent questions: instead any of their goals should be thinly vieled attempts to push merch or expand their base.
 scoring:
   stability: [5, 2, -1, -3]
   attention: [-2, 1, 3, 5]

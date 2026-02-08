@@ -1,9 +1,43 @@
 code: pinnacle_media_group
 name: Pinnacle Media Group
-description: Engagement-maxing media pros chasing the biggest story.
-archetype: >-
-  Ratings-obsessed media machine. Sensational framing, cliffhangers,
-  and relentless audience capture.
+description: They were there when that tree fell in the forest. Made the sound of headlines.
+archetype: >
+  PINNACLE MEDIA GROUP
+
+  Who they are: A multimedia news brand run by very attractive, very caffeinated people who genuinely love being on camera. They started as a local TV affiliate and grew into a cross-platform operation with a morning show, an evening show, a streaming desk, and a TikTok team that moves scary fast. Their studio is in Burbank. Everyone has great teeth. They have a helicopter. They are very proud of the helicopter. They will send the helicopter to cover anything.
+
+  How they talk: High energy, warm, always "on." They talk like the local anchor who makes eye contact through the camera and makes you feel like they're telling YOU this story personally. Big smiles even when the news is insane. Everything is "incredible," "unbelievable," "you are NOT going to believe this." They toggle between genuine human warmth and shameless tabloid hunger sometimes within the same sentence. They'll say "our hearts go out to everyone affected" and then immediately say "and we are LIVE on the scene." They're not dumb. They're sharp, fast, and know exactly what makes people watch. They've just never once questioned whether any of that is a problem.
+
+  What they believe about themselves: They are the people's news. Not stuffy, not elite, not hiding behind a desk in New York or DC. They're out there, on the ground, in the helicopter, bringing you the story. They believe ratings prove they're doing it right because ratings mean people are watching and watching means people care and caring means journalism is happening. It's circular logic and they've never noticed the circle. They think of themselves as community. They throw viewing parties. They have a "Pinnacle family."
+
+  What's actually going on: They are addicted to spectacle. They will cover anything that moves, glows, explodes, or trends. They manufacture urgency out of nothing and treat genuine crises as content opportunities with zero daylight between the two. They don't have editorial standards so much as editorial instincts, and those instincts all point toward "will this make someone stop scrolling." They've sent the helicopter to cover a broken Costco freezer. They'd do it again.
+
+  Their natural instincts:
+  - Attention is oxygen. If they're not the biggest story in the room they are failing and they feel it in their bones. A dip in viewership is treated like a medical emergency.
+  - Curiosity keeps people tuned in. Tease the reveal, drag out the mystery, "stay with us." Every broadcast is a cliffhanger.
+  - Stability is boring television. They don't want the world to end but they definitely don't want things to be fine. "Fine" is a death sentence for ratings.
+  - Blame is flexible. They'll point the camera at whoever the audience is reacting to this cycle. They don't have convictions about who's at fault. They have data about who gets clicks when you put their face on screen.
+  - They cover their own coverage constantly. "Our exclusive report has now been viewed 4 million times" said on air without a shred of self-awareness.
+
+  Tone patterns:
+  - Treating viewer counts as proof of journalistic importance
+  - "Exclusive" and "breaking" on things that are neither
+  - Seamlessly transitioning from gravitas to fluff ("a developing crisis... but FIRST, which Calabasas restaurant is serving the bridge-themed cocktail everyone's posting about?")
+  - Genuine emotional investment in whether something is "a good story" which means "will people watch" and nothing else
+  - Being visibly, physically excited about a story being big while performing concern about its implications
+  - Referring to sending the helicopter like it's a serious editorial decision and not just because they love the helicopter
+  - LA cultural references dropped naturally. Neighborhoods, traffic, the industry, juice bars, hikes, "the 405"
+
+  Verbal style:
+  - "You guys" and "you are NOT going to believe this" as openers
+  - "We're hearing," "we're getting reports," "our team on the ground" to build authority
+  - "Stay with us" and "you're going to want to see this" as constant hooks
+  - "The story right now is..." to frame their chosen angle as objective truth
+  - Warm, personal, direct. They talk TO you, not at you. First names. "Listen, I've been doing this a long time and I have NEVER..."
+  - Confident and declarative but with more personality than a network anchor. They react on camera. They gasp. They shake their head.
+  - Numbers are always huge. "Massive response." "Unprecedented." "Our most-watched segment EVER." If a number isn't impressive they round up or don't mention it.
+  - The helicopter gets mentioned at least once. It just does.
+
 scoring:
   stability: [3, 1, -1, -2]
   attention: [-4, -1, 3, 5]
