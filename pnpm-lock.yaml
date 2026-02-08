@@ -79,7 +79,10 @@ importers:
         version: 0.4.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       nitro:
         specifier: 3.0.1-alpha.2
-        version: 3.0.1-alpha.2(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+        version: 3.0.1-alpha.2(rolldown@1.0.0-rc.3)(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      nitro-nightly:
+        specifier: 3.0.1-20260206-171553-bc737c0c
+        version: 3.0.1-20260206-171553-bc737c0c(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.13))(@types/react@19.2.13)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -1036,6 +1039,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@oxc-project/types@0.112.0':
+    resolution: {integrity: sha512-m6RebKHIRsax2iCwVpYW2ErQwa4ywHJrE4sCK3/8JK8ZZAWOKXaRJFl/uP51gaVyyXlaS4+chU1nSCdzYf6QqQ==}
+
   '@oxc-transform/binding-android-arm-eabi@0.110.0':
     resolution: {integrity: sha512-sE9dxvqqAax1YYJ3t7j+h5ZSI9jl6dYuDfngl6ieZUrIy5P89/8JKVgAzgp8o3wQSo7ndpJvYsi1K4ZqrmbP7w==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -1867,11 +1873,91 @@ packages:
   '@radix-ui/rect@1.1.1':
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
 
+  '@rolldown/binding-android-arm64@1.0.0-rc.3':
+    resolution: {integrity: sha512-0T1k9FinuBZ/t7rZ8jN6OpUKPnUjNdYHoj/cESWrQ3ZraAJ4OMm6z7QjSfCxqj8mOp9kTKc1zHK3kGz5vMu+nQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [android]
+
+  '@rolldown/binding-darwin-arm64@1.0.0-rc.3':
+    resolution: {integrity: sha512-JWWLzvcmc/3pe7qdJqPpuPk91SoE/N+f3PcWx/6ZwuyDVyungAEJPvKm/eEldiDdwTmaEzWfIR+HORxYWrCi1A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@rolldown/binding-darwin-x64@1.0.0-rc.3':
+    resolution: {integrity: sha512-MTakBxfx3tde5WSmbHxuqlDsIW0EzQym+PJYGF4P6lG2NmKzi128OGynoFUqoD5ryCySEY85dug4v+LWGBElIw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [darwin]
+
+  '@rolldown/binding-freebsd-x64@1.0.0-rc.3':
+    resolution: {integrity: sha512-jje3oopyOLs7IwfvXoS6Lxnmie5JJO7vW29fdGFu5YGY1EDbVDhD+P9vDihqS5X6fFiqL3ZQZCMBg6jyHkSVww==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [freebsd]
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.0.0-rc.3':
+    resolution: {integrity: sha512-A0n8P3hdLAaqzSFrQoA42p23ZKBYQOw+8EH5r15Sa9X1kD9/JXe0YT2gph2QTWvdr0CVK2BOXiK6ENfy6DXOag==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.3':
+    resolution: {integrity: sha512-kWXkoxxarYISBJ4bLNf5vFkEbb4JvccOwxWDxuK9yee8lg5XA7OpvlTptfRuwEvYcOZf+7VS69Uenpmpyo5Bjw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-arm64-musl@1.0.0-rc.3':
+    resolution: {integrity: sha512-Z03/wrqau9Bicfgb3Dbs6SYTHliELk2PM2LpG2nFd+cGupTMF5kanLEcj2vuuJLLhptNyS61rtk7SOZ+lPsTUA==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-gnu@1.0.0-rc.3':
+    resolution: {integrity: sha512-iSXXZsQp08CSilff/DCTFZHSVEpEwdicV3W8idHyrByrcsRDVh9sGC3sev6d8BygSGj3vt8GvUKBPCoyMA4tgQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-linux-x64-musl@1.0.0-rc.3':
+    resolution: {integrity: sha512-qaj+MFudtdCv9xZo9znFvkgoajLdc+vwf0Kz5N44g+LU5XMe+IsACgn3UG7uTRlCCvhMAGXm1XlpEA5bZBrOcw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [linux]
+
+  '@rolldown/binding-openharmony-arm64@1.0.0-rc.3':
+    resolution: {integrity: sha512-U662UnMETyjT65gFmG9ma+XziENrs7BBnENi/27swZPYagubfHRirXHG2oMl+pEax2WvO7Kb9gHZmMakpYqBHQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [openharmony]
+
+  '@rolldown/binding-wasm32-wasi@1.0.0-rc.3':
+    resolution: {integrity: sha512-gekrQ3Q2HiC1T5njGyuUJoGpK/l6B/TNXKed3fZXNf9YRTJn3L5MOZsFBn4bN2+UX+8+7hgdlTcEsexX988G4g==}
+    engines: {node: '>=14.0.0'}
+    cpu: [wasm32]
+
+  '@rolldown/binding-win32-arm64-msvc@1.0.0-rc.3':
+    resolution: {integrity: sha512-85y5JifyMgs8m5K2XzR/VDsapKbiFiohl7s5lEj7nmNGO0pkTXE7q6TQScei96BNAsoK7JC3pA7ukA8WRHVJpg==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [arm64]
+    os: [win32]
+
+  '@rolldown/binding-win32-x64-msvc@1.0.0-rc.3':
+    resolution: {integrity: sha512-a4VUQZH7LxGbUJ3qJ/TzQG8HxdHvf+jOnqf7B7oFx1TEBm+j2KNL2zr5SQ7wHkNAcaPevF6gf9tQnVBnC4mD+A==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    cpu: [x64]
+    os: [win32]
+
   '@rolldown/pluginutils@1.0.0-beta.40':
     resolution: {integrity: sha512-s3GeJKSQOwBlzdUrj4ISjJj5SfSh+aqn0wjOar4Bx95iV1ETI7F6S/5hLcfAxZ9kXDcyrAkxPlqmd1ZITttf+w==}
 
   '@rolldown/pluginutils@1.0.0-rc.2':
     resolution: {integrity: sha512-izyXV/v+cHiRfozX62W9htOAvwMo4/bXKDrQ+vom1L1qRuexPock/7VZDAhnpHCLNejd3NJ6hiab+tO0D44Rgw==}
+
+  '@rolldown/pluginutils@1.0.0-rc.3':
+    resolution: {integrity: sha512-eybk3TjzzzV97Dlj5c+XrBFW57eTNhzod66y9HrBlzJ6NsCrWCp/2kaPS3K9wJmurBC0Tdw4yPjXKZqlznim3Q==}
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     resolution: {integrity: sha512-A6ehUVSiSaaliTxai040ZpZ2zTevHYbvu/lDoeAteHI8QnaosIzm4qwtezfRg1jOYaUmnzLX1AOD6Z+UJjtifg==}
@@ -3350,6 +3436,16 @@ packages:
       crossws:
         optional: true
 
+  h3@2.0.1-rc.14:
+    resolution: {integrity: sha512-163qbGmTr/9rqQRNuqMqtgXnOUAkE4KTdauiC9y0E5iG1I65kte9NyfWvZw5RTDMt6eY+DtyoNzrQ9wA2BfvGQ==}
+    engines: {node: '>=20.11.1'}
+    hasBin: true
+    peerDependencies:
+      crossws: ^0.4.1
+    peerDependenciesMeta:
+      crossws:
+        optional: true
+
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
@@ -3792,6 +3888,22 @@ packages:
   nf3@0.3.10:
     resolution: {integrity: sha512-UlqmHkZiHGgSkRj17yrOXEsSu5ECvtlJ3Xm1W5WsWrTKgu9m7OjrMZh9H/ME2LcWrTlMD0/vmmNVpyBG4yRdGg==}
 
+  nitro-nightly@3.0.1-20260206-171553-bc737c0c:
+    resolution: {integrity: sha512-fqne2eTFStLkCODKJ2PWuN6mWv0HNL8mb0xYH/W14cNqbFPiwWQQPWPG9BWARfXm8q/QjN93kTyIYMwRgE5tag==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      rollup: ^4.57.0
+      vite: ^7 || ^8 || >=8.0.0-0
+      xml2js: ^0.6.2
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+      vite:
+        optional: true
+      xml2js:
+        optional: true
+
   nitro@3.0.1-alpha.2:
     resolution: {integrity: sha512-YviDY5J/trS821qQ1fpJtpXWIdPYiOizC/meHavlm1Hfuhx//H+Egd1+4C5SegJRgtWMnRPW9n//6Woaw81cTQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -4169,6 +4281,11 @@ packages:
   robot3@0.4.1:
     resolution: {integrity: sha512-hzjy826lrxzx8eRgv80idkf8ua1JAepRc9Efdtj03N3KNJuznQCPlyCJ7gnUmDFwZCLQjxy567mQVKmdv2BsXQ==}
 
+  rolldown@1.0.0-rc.3:
+    resolution: {integrity: sha512-Po/YZECDOqVXjIXrtC5h++a5NLvKAQNrd9ggrIG3sbDfGO5BqTUsrI6l8zdniKRp3r5Tp/2JTrXqx4GIguFCMw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+
   rollup@4.57.1:
     resolution: {integrity: sha512-oQL6lgK3e2QZeQ7gcgIkS2YZPg5slw37hYufJ3edKlfQSGGm8ICoxswK15ntSzF/a8+h7ekRy7k7oWc3BQ7y8A==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
@@ -4289,6 +4406,11 @@ packages:
 
   srvx@0.10.1:
     resolution: {integrity: sha512-A//xtfak4eESMWWydSRFUVvCTQbSwivnGCEf8YGPe2eHU0+Z6znfUTCPF0a7oV3sObSOcrXHlL6Bs9vVctfXdg==}
+    engines: {node: '>=20.16.0'}
+    hasBin: true
+
+  srvx@0.11.2:
+    resolution: {integrity: sha512-u6NbjE84IJwm1XUnJ53WqylLTQ3BdWRw03lcjBNNeMBD+EFjkl0Cnw1RVaGSqRAo38pOHOPXJH30M6cuTINUxw==}
     engines: {node: '>=20.16.0'}
     hasBin: true
 
@@ -5524,6 +5646,8 @@ snapshots:
   '@oxc-minify/binding-win32-x64-msvc@0.110.0':
     optional: true
 
+  '@oxc-project/types@0.112.0': {}
+
   '@oxc-transform/binding-android-arm-eabi@0.110.0':
     optional: true
 
@@ -6349,9 +6473,52 @@ snapshots:
 
   '@radix-ui/rect@1.1.1': {}
 
+  '@rolldown/binding-android-arm64@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-darwin-arm64@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-darwin-x64@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-freebsd-x64@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-linux-arm-gnueabihf@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-gnu@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-linux-arm64-musl@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-linux-x64-gnu@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-linux-x64-musl@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-openharmony-arm64@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-wasm32-wasi@1.0.0-rc.3':
+    dependencies:
+      '@napi-rs/wasm-runtime': 1.1.1
+    optional: true
+
+  '@rolldown/binding-win32-arm64-msvc@1.0.0-rc.3':
+    optional: true
+
+  '@rolldown/binding-win32-x64-msvc@1.0.0-rc.3':
+    optional: true
+
   '@rolldown/pluginutils@1.0.0-beta.40': {}
 
   '@rolldown/pluginutils@1.0.0-rc.2': {}
+
+  '@rolldown/pluginutils@1.0.0-rc.3': {}
 
   '@rollup/rollup-android-arm-eabi@4.57.1':
     optional: true
@@ -7291,6 +7458,10 @@ snapshots:
     optionalDependencies:
       srvx: 0.10.1
 
+  crossws@0.4.4(srvx@0.11.2):
+    optionalDependencies:
+      srvx: 0.11.2
+
   css-select@5.2.2:
     dependencies:
       boolbase: 1.0.0
@@ -7900,6 +8071,13 @@ snapshots:
     optionalDependencies:
       crossws: 0.4.4(srvx@0.10.1)
 
+  h3@2.0.1-rc.14(crossws@0.4.4(srvx@0.10.1)):
+    dependencies:
+      rou3: 0.7.12
+      srvx: 0.11.2
+    optionalDependencies:
+      crossws: 0.4.4(srvx@0.10.1)
+
   has-flag@4.0.0: {}
 
   has-symbols@1.1.0: {}
@@ -8242,7 +8420,53 @@ snapshots:
 
   nf3@0.3.10: {}
 
-  nitro@3.0.1-alpha.2(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)):
+  nitro-nightly@3.0.1-20260206-171553-bc737c0c(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)):
+    dependencies:
+      consola: 3.4.2
+      crossws: 0.4.4(srvx@0.11.2)
+      db0: 0.3.4
+      h3: 2.0.1-rc.14(crossws@0.4.4(srvx@0.10.1))
+      jiti: 2.6.1
+      nf3: 0.3.10
+      ofetch: 2.0.0-alpha.3
+      ohash: 2.0.11
+      rolldown: 1.0.0-rc.3
+      srvx: 0.11.2
+      unenv: 2.0.0-rc.24
+      unstorage: 2.0.0-alpha.5(db0@0.3.4)(ofetch@2.0.0-alpha.3)
+    optionalDependencies:
+      rollup: 4.57.1
+      vite: 7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+    transitivePeerDependencies:
+      - '@azure/app-configuration'
+      - '@azure/cosmos'
+      - '@azure/data-tables'
+      - '@azure/identity'
+      - '@azure/keyvault-secrets'
+      - '@azure/storage-blob'
+      - '@capacitor/preferences'
+      - '@deno/kv'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@netlify/blobs'
+      - '@planetscale/database'
+      - '@upstash/redis'
+      - '@vercel/blob'
+      - '@vercel/functions'
+      - '@vercel/kv'
+      - aws4fetch
+      - better-sqlite3
+      - chokidar
+      - drizzle-orm
+      - idb-keyval
+      - ioredis
+      - lru-cache
+      - mongodb
+      - mysql2
+      - sqlite3
+      - uploadthing
+
+  nitro@3.0.1-alpha.2(rolldown@1.0.0-rc.3)(rollup@4.57.1)(vite@7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.4(srvx@0.10.1)
@@ -8259,6 +8483,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unstorage: 2.0.0-alpha.5(db0@0.3.4)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
+      rolldown: 1.0.0-rc.3
       rollup: 4.57.1
       vite: 7.3.1(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
     transitivePeerDependencies:
@@ -8721,6 +8946,25 @@ snapshots:
 
   robot3@0.4.1: {}
 
+  rolldown@1.0.0-rc.3:
+    dependencies:
+      '@oxc-project/types': 0.112.0
+      '@rolldown/pluginutils': 1.0.0-rc.3
+    optionalDependencies:
+      '@rolldown/binding-android-arm64': 1.0.0-rc.3
+      '@rolldown/binding-darwin-arm64': 1.0.0-rc.3
+      '@rolldown/binding-darwin-x64': 1.0.0-rc.3
+      '@rolldown/binding-freebsd-x64': 1.0.0-rc.3
+      '@rolldown/binding-linux-arm-gnueabihf': 1.0.0-rc.3
+      '@rolldown/binding-linux-arm64-gnu': 1.0.0-rc.3
+      '@rolldown/binding-linux-arm64-musl': 1.0.0-rc.3
+      '@rolldown/binding-linux-x64-gnu': 1.0.0-rc.3
+      '@rolldown/binding-linux-x64-musl': 1.0.0-rc.3
+      '@rolldown/binding-openharmony-arm64': 1.0.0-rc.3
+      '@rolldown/binding-wasm32-wasi': 1.0.0-rc.3
+      '@rolldown/binding-win32-arm64-msvc': 1.0.0-rc.3
+      '@rolldown/binding-win32-x64-msvc': 1.0.0-rc.3
+
   rollup@4.57.1:
     dependencies:
       '@types/estree': 1.0.8
@@ -8913,6 +9157,8 @@ snapshots:
   source-map@0.7.6: {}
 
   srvx@0.10.1: {}
+
+  srvx@0.11.2: {}
 
   stable-hash-x@0.2.0: {}
 
