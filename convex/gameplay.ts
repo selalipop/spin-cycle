@@ -1049,7 +1049,7 @@ export const resolveRoundIntroVideo = action({
           status: 'pending' as const,
         }
       }
-      createQueueClient
+      
       const result = await fal.queue.result(ROUND_INTRO_VIDEO_ENDPOINT, {
         requestId: state.requestId,
       })
