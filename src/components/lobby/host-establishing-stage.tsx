@@ -38,7 +38,7 @@ export function HostEstablishingStage({
             <WashingMachineLoader />
             <p className="font-heading text-2xl text-black">Preparing the opening scene.</p>
             <p className="text-base text-black/92">
-              Loading the intro clip and story briefing.
+              Generating or loading the round intro footage.
             </p>
           </div>
         </CardContent>
@@ -70,7 +70,7 @@ export function HostEstablishingStage({
           </video>
           <div className="neo-panel-soft reel-panel p-4">
             <p className="neo-label text-black/78">Escalation</p>
-            <p className="reel-text mt-2 text-black">{event}</p>
+            <p className="reel-text mt-2 text-black ">{event}</p>
           </div>
           <p className="text-base text-black/90">
             Once the clip ends, you can start the round.
@@ -82,14 +82,7 @@ export function HostEstablishingStage({
 
   return (
     <Card className="neo-panel neo-grid gap-5 py-4">
-      <CardHeader className="gap-3 pb-0">
-        <div className="flex flex-wrap items-center gap-3">
-          <CardTitle className="font-display text-3xl text-black sm:text-4xl">{scenarioTitle}</CardTitle>
-          <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-xs uppercase text-black">
-            Round Introduction
-          </Badge>
-        </div>
-      </CardHeader>
+     
 
       <CardContent className="space-y-5">
         <div className="neo-panel-soft reel-panel p-5">

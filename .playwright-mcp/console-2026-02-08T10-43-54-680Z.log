@@ -54,3 +54,19 @@ https://react.dev/link/hydration-mismatch
 [ 6240564ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553675156:0
 [ 6259562ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553694053:0
 [ 6290446ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/src/styles/app.css?t=1770553725066:0
+[11644943ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [[object Object], [object Object], function(args) {
+    return client.action(actionReference, args);
+  }] [round_results, function(args) {
+    return client.action(actionReference, args);
+  }, d0c813a6-052d-4bcc-833a-03548b36a5e9, , , 1] @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=97635c03:5627
+[11644944ms] [ERROR] The final argument passed to %s changed size between renders. The order and size of this array must remain constant.
+
+Previous: %s
+Incoming: %s useEffect [[object Object], [object Object], function(args) {
+    return client.action(actionReference, args);
+  }] [round_results, function(args) {
+    return client.action(actionReference, args);
+  }, d0c813a6-052d-4bcc-833a-03548b36a5e9, , , 1] @ http://localhost:3000/node_modules/.vite/deps/react-dom_client.js?v=97635c03:5627

@@ -1,5 +1,6 @@
 import { ConvexError, v } from 'convex/values'
 import { retry } from '@lifeomic/attempt'
+import { fal } from '@fal-ai/client'
 import { OpenRouter } from '@openrouter/sdk'
 import { Liquid } from 'liquidjs'
 import { internal } from './_generated/api'
@@ -9,6 +10,7 @@ import {
 
 
   action,
+  internalQuery,
   internalMutation,
   mutation,
   query
@@ -16,6 +18,7 @@ import {
 import {
   GENERATE_FACTION_BRIEF_SYSTEM,
   GENERATE_FACTION_BRIEF_USER,
+  GENERATE_ROUND_INTRO_VIDEO_PROMPT_USER,
   RESOLVE_ROUND_OUTCOME_SYSTEM,
   RESOLVE_ROUND_OUTCOME_USER,
   SCORE_SUBMITTED_ACTION_SYSTEM,
@@ -25,6 +28,12 @@ import type { MutationCtx, QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel'
 
 const DEFAULT_OPENROUTER_MODEL = 'google/gemini-3-flash-preview'
+const ROUND_INTRO_VIDEO_ENDPOINT = 'xai/grok-imagine-video/text-to-video'
+const ROUND_INTRO_VIDEO_DURATION_SECONDS = 10
+const ROUND_INTRO_VIDEO_ASPECT_RATIO = '16:9'
+const ROUND_INTRO_VIDEO_RESOLUTION = '480p'
+const ROUND_INTRO_VIDEO_RESOLVE_TIMEOUT_MS = 10_000
+const ROUND_INTRO_VIDEO_RESOLVE_POLL_INTERVAL_MS = 1_200
 const SUBMITTING_DURATION_MS = 120_000
 const MAX_SUBMISSION_CONTENT_LENGTH = 1800
 
@@ -221,6 +230,19 @@ type CompleteRoundProcessingResult = {
   appliedCount: number
 }
 
+type RoundIntroVideoEnqueueResult = {
+  requestId?: string
+  error?: string
+}
+
+type RoundIntroVideoStateResult = {
+  status: 'noop' | 'pending' | 'ready'
+  roundId?: Id<'rounds'>
+  requestId?: string
+  storageId?: Id<'_storage'>
+  error?: string
+}
+
 export const getMainScreenRoundState = query({
   args: {
     gameId: v.string(),
@@ -238,6 +260,9 @@ export const getMainScreenRoundState = query({
       sentimentAfter: v.optional(sentiments),
       narrative: v.optional(v.string()),
       escalation: v.optional(v.string()),
+      introVideoRequestId: v.optional(v.string()),
+      introVideoUrl: v.optional(v.string()),
+      introVideoError: v.optional(v.string()),
       roundNumber: v.optional(v.number()),
       submittingDeadlineMs: v.optional(v.number()),
       participatingFactionCount: v.number(),
@@ -269,6 +294,9 @@ export const getMainScreenRoundState = query({
 
     let round = currentRound
     let submissionsForDisplay: Array<Doc<'submitted_actions'>> = []
+    let introVideoRequestId: string | undefined
+    let introVideoUrl: string | undefined
+    let introVideoError: string | undefined
 
     if (round) {
       const activeRound = round
@@ -296,6 +324,28 @@ export const getMainScreenRoundState = query({
             .query('submitted_actions')
             .withIndex('by_round', (q) => q.eq('round_id', previousRound._id))
             .collect()
+        }
+      }
+    }
+
+    if (
+      game.phase === GamePhase.GameIntroduction &&
+      typeof game.current_round === 'number'
+    ) {
+      const introRoundNumber = game.current_round + 1
+      const introRound = await ctx.db
+        .query('rounds')
+        .withIndex('by_game_and_number', (q) =>
+          q.eq('game_id', game._id).eq('number', introRoundNumber),
+        )
+        .unique()
+
+      if (introRound) {
+        introVideoRequestId = introRound.intro_video_request_id
+        introVideoError = introRound.intro_video_error
+
+        if (introRound.intro_video_storage_id) {
+          introVideoUrl = (await ctx.storage.getUrl(introRound.intro_video_storage_id)) ?? undefined
         }
       }
     }
@@ -364,6 +414,9 @@ export const getMainScreenRoundState = query({
       sentimentAfter: round?.sentiment_after,
       narrative: round?.narrative,
       escalation: round?.escalation,
+      introVideoRequestId,
+      introVideoUrl,
+      introVideoError,
       roundNumber: round?.number,
       submittingDeadlineMs: round?.submitting_deadline_ms,
       participatingFactionCount: participatingFactionIds.length,
@@ -895,6 +948,25 @@ export const processRoundSubmissions = action({
       begin.sentiments ?? getDefaultSentiments(),
       outcome.sentimentDelta,
     )
+    const resolvedRoundNumber = begin.roundNumber ?? 1
+    const resolvedMaxRounds = begin.maxRounds ?? 1
+
+    let introVideoRequestId: string | undefined
+    let introVideoError: string | undefined
+
+    if (resolvedRoundNumber < resolvedMaxRounds) {
+      const introVideoEnqueue = await enqueueRoundIntroVideo({
+        scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
+        nextRoundNumber: resolvedRoundNumber + 1,
+        maxRounds: resolvedMaxRounds,
+        escalation: outcome.escalation,
+        sentimentAfter,
+        liquid,
+      })
+
+      introVideoRequestId = introVideoEnqueue.requestId
+      introVideoError = introVideoEnqueue.error
+    }
 
     const complete = (await ctx.runMutation(
       internal.gameplay.finalizeRoundProcessingAndEnterResults as any,
@@ -904,6 +976,8 @@ export const processRoundSubmissions = action({
         sentimentAfter,
         narrative: outcome.narrative,
         escalation: outcome.escalation,
+        introVideoRequestId,
+        introVideoError,
       },
     )) as CompleteRoundProcessingResult
 
@@ -912,6 +986,128 @@ export const processRoundSubmissions = action({
       phase: complete.phase,
       processedCount,
       appliedCount: complete.status === 'completed' ? appliedCount : 0,
+    }
+  },
+})
+
+export const resolveRoundIntroVideo = action({
+  args: {
+    gameId: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('ready'), v.literal('pending'), v.literal('noop'), v.literal('failed')),
+    url: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const state = (await ctx.runQuery(internal.gameplay.getRoundIntroVideoState as any, {
+      gameId: args.gameId,
+    })) as RoundIntroVideoStateResult
+
+    if (state.status === 'noop') {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    if (state.storageId) {
+      const url = await ctx.storage.getUrl(state.storageId)
+
+      return {
+        status: 'ready' as const,
+        url: url ?? undefined,
+      }
+    }
+
+    if (!state.roundId || !state.requestId) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    const falApiKey = getEnvironmentVariable('FAL_KEY')
+
+    if (!falApiKey) {
+      await ctx.runMutation(internal.gameplay.markRoundIntroVideoFailed as any, {
+        gameId: args.gameId,
+        roundId: state.roundId,
+        requestId: state.requestId,
+        error: 'FAL_KEY is required to resolve round intro video',
+      })
+
+      return {
+        status: 'failed' as const,
+      }
+    }
+
+    fal.config({ credentials: falApiKey })
+
+    try {
+      const completed = await waitForRoundIntroVideoCompletion(state.requestId)
+
+      if (!completed) {
+        return {
+          status: 'pending' as const,
+        }
+      }
+
+      const result = await fal.queue.result(ROUND_INTRO_VIDEO_ENDPOINT, {
+        requestId: state.requestId,
+      })
+      const videoUrl = extractRoundIntroVideoUrl((result as { data?: unknown }).data)
+
+      if (!videoUrl) {
+        await ctx.runMutation(internal.gameplay.markRoundIntroVideoFailed as any, {
+          gameId: args.gameId,
+          roundId: state.roundId,
+          requestId: state.requestId,
+          error: 'FAL did not return a usable video URL',
+        })
+
+        return {
+          status: 'failed' as const,
+        }
+      }
+
+      const videoResponse = await fetch(videoUrl)
+
+      if (!videoResponse.ok) {
+        await ctx.runMutation(internal.gameplay.markRoundIntroVideoFailed as any, {
+          gameId: args.gameId,
+          roundId: state.roundId,
+          requestId: state.requestId,
+          error: `Failed to download generated video (${videoResponse.status})`,
+        })
+
+        return {
+          status: 'failed' as const,
+        }
+      }
+
+      const videoBlob = await videoResponse.blob()
+      const storageId = await ctx.storage.store(videoBlob)
+
+      await ctx.runMutation(internal.gameplay.markRoundIntroVideoReady as any, {
+        gameId: args.gameId,
+        roundId: state.roundId,
+        requestId: state.requestId,
+        storageId,
+      })
+
+      return {
+        status: 'ready' as const,
+        url: (await ctx.storage.getUrl(storageId)) ?? undefined,
+      }
+    } catch (error) {
+      await ctx.runMutation(internal.gameplay.markRoundIntroVideoFailed as any, {
+        gameId: args.gameId,
+        roundId: state.roundId,
+        requestId: state.requestId,
+        error: normalizeRoundIntroVideoError(error),
+      })
+
+      return {
+        status: 'failed' as const,
+      }
     }
   },
 })
@@ -1363,6 +1559,73 @@ export const beginRoundProcessing = internalMutation({
   },
 })
 
+export const getRoundIntroVideoState = internalQuery({
+  args: {
+    gameId: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('noop'), v.literal('pending'), v.literal('ready')),
+    roundId: v.optional(v.id('rounds')),
+    requestId: v.optional(v.string()),
+    storageId: v.optional(v.id('_storage')),
+    error: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game || game.phase !== GamePhase.GameIntroduction) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    const currentRoundNumber = game.current_round
+
+    if (typeof currentRoundNumber !== 'number') {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    const introRound = await ctx.db
+      .query('rounds')
+      .withIndex('by_game_and_number', (q) =>
+        q.eq('game_id', game._id).eq('number', currentRoundNumber + 1),
+      )
+      .unique()
+
+    if (!introRound) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    if (introRound.intro_video_storage_id) {
+      return {
+        status: 'ready' as const,
+        roundId: introRound._id,
+        storageId: introRound.intro_video_storage_id,
+        error: introRound.intro_video_error,
+      }
+    }
+
+    if (introRound.intro_video_request_id) {
+      return {
+        status: 'pending' as const,
+        roundId: introRound._id,
+        requestId: introRound.intro_video_request_id,
+        error: introRound.intro_video_error,
+      }
+    }
+
+    return {
+      status: 'noop' as const,
+      roundId: introRound._id,
+      error: introRound.intro_video_error,
+    }
+  },
+})
+
 export const applyRoundProcessingScores = internalMutation({
   args: {
     gameId: v.string(),
@@ -1440,6 +1703,8 @@ export const finalizeRoundProcessingAndEnterResults = internalMutation({
     sentimentAfter: sentiments,
     narrative: v.string(),
     escalation: v.string(),
+    introVideoRequestId: v.optional(v.string()),
+    introVideoError: v.optional(v.string()),
   },
   returns: v.object({
     status: v.union(v.literal('completed'), v.literal('noop')),
@@ -1473,11 +1738,44 @@ export const finalizeRoundProcessingAndEnterResults = internalMutation({
       }
     }
 
+    const normalizedEscalation = normalizeRoundEscalation(args.escalation)
+
     await ctx.db.patch("rounds", round._id, {
       sentiment_after: args.sentimentAfter,
       narrative: normalizeRoundNarrative(args.narrative),
-      escalation: normalizeRoundEscalation(args.escalation),
+      escalation: normalizedEscalation,
     })
+
+    if (round.number < game.max_rounds) {
+      const nextRoundNumber = round.number + 1
+      const existingNextRound = await ctx.db
+        .query('rounds')
+        .withIndex('by_game_and_number', (q) =>
+          q.eq('game_id', game._id).eq('number', nextRoundNumber),
+        )
+        .unique()
+
+      if (existingNextRound) {
+        await ctx.db.patch("rounds", existingNextRound._id, {
+          event_development: normalizedEscalation,
+          sentiment_before: args.sentimentAfter,
+          intro_video_request_id: args.introVideoRequestId,
+          intro_video_storage_id: undefined,
+          intro_video_error: args.introVideoError,
+        })
+      } else {
+        await ctx.db.insert('rounds', {
+          game_id: game._id,
+          number: nextRoundNumber,
+          event_development: normalizedEscalation,
+          sentiment_before: args.sentimentAfter,
+          intro_video_request_id: args.introVideoRequestId,
+          intro_video_error: args.introVideoError,
+          faction_briefs: {},
+          faction_submitted: buildInitialFactionSubmittedForRound(round),
+        })
+      }
+    }
 
     await ctx.db.patch("games", game._id, {
       sentiments: args.sentimentAfter,
@@ -1488,6 +1786,92 @@ export const finalizeRoundProcessingAndEnterResults = internalMutation({
       status: 'completed' as const,
       phase: GamePhase.RoundResults,
       appliedCount: 0,
+    }
+  },
+})
+
+export const markRoundIntroVideoReady = internalMutation({
+  args: {
+    gameId: v.string(),
+    roundId: v.id('rounds'),
+    requestId: v.string(),
+    storageId: v.id('_storage'),
+  },
+  returns: v.object({
+    status: v.union(v.literal('completed'), v.literal('noop')),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    const round = await ctx.db.get(args.roundId)
+
+    if (
+      !round ||
+      round.game_id !== game._id ||
+      round.intro_video_request_id !== args.requestId
+    ) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    await ctx.db.patch("rounds", round._id, {
+      intro_video_storage_id: args.storageId,
+      intro_video_request_id: undefined,
+      intro_video_error: undefined,
+    })
+
+    return {
+      status: 'completed' as const,
+    }
+  },
+})
+
+export const markRoundIntroVideoFailed = internalMutation({
+  args: {
+    gameId: v.string(),
+    roundId: v.id('rounds'),
+    requestId: v.string(),
+    error: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('completed'), v.literal('noop')),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    const round = await ctx.db.get(args.roundId)
+
+    if (
+      !round ||
+      round.game_id !== game._id ||
+      round.intro_video_request_id !== args.requestId
+    ) {
+      return {
+        status: 'noop' as const,
+      }
+    }
+
+    await ctx.db.patch("rounds", round._id, {
+      intro_video_request_id: undefined,
+      intro_video_storage_id: undefined,
+      intro_video_error: args.error.slice(0, 500),
+    })
+
+    return {
+      status: 'completed' as const,
     }
   },
 })
@@ -1756,6 +2140,18 @@ function getParticipatingFactionIds(round: Doc<'rounds'> | null): Array<Id<'fact
   }
 
   return Object.keys(round.faction_submitted) as Array<Id<'factions'>>
+}
+
+function buildInitialFactionSubmittedForRound(
+  round: Doc<'rounds'>,
+): Record<Id<'factions'>, boolean> {
+  const submitted: Partial<Record<Id<'factions'>, boolean>> = {}
+
+  for (const factionId of Object.keys(round.faction_submitted) as Array<Id<'factions'>>) {
+    submitted[factionId] = false
+  }
+
+  return submitted as Record<Id<'factions'>, boolean>
 }
 
 function hasBriefingForFaction(
@@ -2098,6 +2494,189 @@ async function resolveRoundOutcome({
     delay: 500,
     factor: 2,
     maxDelay: 2_500,
+  })
+}
+
+async function enqueueRoundIntroVideo({
+  scenarioTitle,
+  nextRoundNumber,
+  maxRounds,
+  escalation,
+  sentimentAfter,
+  liquid,
+}: {
+  scenarioTitle: string
+  nextRoundNumber: number
+  maxRounds: number
+  escalation: string
+  sentimentAfter: SentimentsValue
+  liquid: Liquid
+}): Promise<RoundIntroVideoEnqueueResult> {
+  const falApiKey = getEnvironmentVariable('FAL_KEY')
+
+  if (!falApiKey) {
+    return {
+      error: 'FAL_KEY is required to generate round intro videos',
+    }
+  }
+
+  fal.config({ credentials: falApiKey })
+
+  const prompt = await liquid.parseAndRender(GENERATE_ROUND_INTRO_VIDEO_PROMPT_USER, {
+    scenario_title: scenarioTitle,
+    next_round_number: nextRoundNumber,
+    max_rounds: maxRounds,
+    sentiment_after: formatSentiments(sentimentAfter),
+    escalation,
+  })
+
+  try {
+    const response = await fal.queue.submit(ROUND_INTRO_VIDEO_ENDPOINT, {
+      input: {
+        prompt,
+        duration: ROUND_INTRO_VIDEO_DURATION_SECONDS,
+        aspect_ratio: ROUND_INTRO_VIDEO_ASPECT_RATIO,
+        resolution: ROUND_INTRO_VIDEO_RESOLUTION,
+      },
+    } as any)
+
+    const requestId = (response as { request_id?: unknown }).request_id
+
+    if (typeof requestId !== 'string' || requestId.trim().length === 0) {
+      return {
+        error: 'FAL did not return a request id for intro video generation',
+      }
+    }
+
+    return {
+      requestId: requestId.trim(),
+    }
+  } catch (error) {
+    return {
+      error: normalizeRoundIntroVideoError(error),
+    }
+  }
+}
+
+async function waitForRoundIntroVideoCompletion(requestId: string): Promise<boolean> {
+  const deadline = Date.now() + ROUND_INTRO_VIDEO_RESOLVE_TIMEOUT_MS
+
+  while (Date.now() < deadline) {
+    const status = await fal.queue.status(ROUND_INTRO_VIDEO_ENDPOINT, {
+      requestId,
+      logs: false,
+    } as any)
+
+    if ((status as { status?: unknown }).status === 'COMPLETED') {
+      return true
+    }
+
+    await sleep(ROUND_INTRO_VIDEO_RESOLVE_POLL_INTERVAL_MS)
+  }
+
+  return false
+}
+
+function extractRoundIntroVideoUrl(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') {
+    return undefined
+  }
+
+  const objectValue = value as Record<string, unknown>
+  const directCandidates = [
+    objectValue.video_url,
+    objectValue.url,
+    objectValue.video,
+  ]
+
+  for (const candidate of directCandidates) {
+    if (typeof candidate === 'string' && looksLikeHttpUrl(candidate)) {
+      return candidate
+    }
+  }
+
+  if (objectValue.video && typeof objectValue.video === 'object') {
+    const nestedVideo = objectValue.video as Record<string, unknown>
+
+    if (typeof nestedVideo.url === 'string' && looksLikeHttpUrl(nestedVideo.url)) {
+      return nestedVideo.url
+    }
+  }
+
+  if (Array.isArray(objectValue.videos)) {
+    for (const item of objectValue.videos) {
+      if (item && typeof item === 'object') {
+        const videoItem = item as Record<string, unknown>
+
+        if (typeof videoItem.url === 'string' && looksLikeHttpUrl(videoItem.url)) {
+          return videoItem.url
+        }
+      }
+
+      if (typeof item === 'string' && looksLikeHttpUrl(item)) {
+        return item
+      }
+    }
+  }
+
+  return findFirstHttpUrl(objectValue)
+}
+
+function looksLikeHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value.trim())
+}
+
+function findFirstHttpUrl(value: unknown): string | undefined {
+  if (!value) {
+    return undefined
+  }
+
+  if (typeof value === 'string') {
+    return looksLikeHttpUrl(value) ? value : undefined
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findFirstHttpUrl(item)
+
+      if (found) {
+        return found
+      }
+    }
+
+    return undefined
+  }
+
+  if (typeof value !== 'object') {
+    return undefined
+  }
+
+  for (const nestedValue of Object.values(value as Record<string, unknown>)) {
+    const found = findFirstHttpUrl(nestedValue)
+
+    if (found) {
+      return found
+    }
+  }
+
+  return undefined
+}
+
+function normalizeRoundIntroVideoError(error: unknown): string {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message.trim().slice(0, 500)
+  }
+
+  if (typeof error === 'string' && error.trim().length > 0) {
+    return error.trim().slice(0, 500)
+  }
+
+  return 'Round intro video generation failed'
+}
+
+function sleep(durationMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, durationMs)
   })
 }
 

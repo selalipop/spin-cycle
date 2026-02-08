@@ -30,6 +30,7 @@ function HostWaitingRoom() {
   const advanceSubmittingToResolving = useMutation(api.gameplay.advanceSubmittingToResolving)
   const generatePlanningBriefings = useAction(api.gameplay.generatePlanningBriefings)
   const processRoundSubmissions = useAction(api.gameplay.processRoundSubmissions)
+  const resolveRoundIntroVideo = useAction(api.gameplay.resolveRoundIntroVideo)
 
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,6 +45,7 @@ function HostWaitingRoom() {
   const planningTriggerRef = useRef<string | null>(null)
   const timeoutTriggerRef = useRef<Set<string>>(new Set())
   const processingTriggerRef = useRef<Set<string>>(new Set())
+  const introVideoResolveInFlightRef = useRef(false)
 
   useEffect(() => {
     if (!lobby || lobby.phase !== 'game_introduction') {
@@ -54,19 +56,100 @@ function HostWaitingRoom() {
 
     const introRoundNumber = (roundState?.roundNumber ?? 0) + 1
     const isRoundOneIntro = introRoundNumber === 1
-    const hasIntroVideo = Boolean(lobby.introVideo) && isRoundOneIntro
+    const hasScenarioIntroVideo = Boolean(lobby.introVideo) && isRoundOneIntro
 
     setVideoFailed(false)
+    if (!isRoundOneIntro) {
+      if (roundState?.introVideoUrl) {
+        setOpeningStage('video')
+        return
+      }
+
+      if (roundState?.introVideoRequestId) {
+        setOpeningStage('loading')
+        return
+      }
+
+      setOpeningStage('briefing')
+      return
+    }
+
     setOpeningStage('loading')
 
     const timer = window.setTimeout(() => {
-      setOpeningStage(hasIntroVideo ? 'video' : 'briefing')
+      setOpeningStage(hasScenarioIntroVideo ? 'video' : 'briefing')
     }, 800)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [lobby?.gameId, lobby?.introVideo, lobby?.phase, roundState?.roundNumber])
+  }, [
+    lobby?.gameId,
+    lobby?.introVideo,
+    lobby?.phase,
+    roundState?.introVideoRequestId,
+    roundState?.introVideoUrl,
+    roundState?.roundNumber,
+  ])
+
+  useEffect(() => {
+    if (!lobby || !roundState || lobby.phase !== 'game_introduction') {
+      return
+    }
+
+    const introRoundNumber = (roundState.roundNumber ?? 0) + 1
+
+    if (
+      introRoundNumber <= 1 ||
+      !roundState.introVideoRequestId ||
+      Boolean(roundState.introVideoUrl)
+    ) {
+      return
+    }
+
+    let cancelled = false
+
+    const resolveVideo = async () => {
+      if (cancelled || introVideoResolveInFlightRef.current) {
+        return
+      }
+
+      introVideoResolveInFlightRef.current = true
+
+      try {
+        const result = await resolveRoundIntroVideo({ gameId: roundState.gameId })
+
+        if (!cancelled && result.status === 'failed') {
+          setVideoFailed(true)
+          setOpeningStage('briefing')
+        }
+      } catch {
+        if (!cancelled) {
+          setVideoFailed(true)
+          setOpeningStage('briefing')
+        }
+      } finally {
+        introVideoResolveInFlightRef.current = false
+      }
+    }
+
+    void resolveVideo()
+    const timer = window.setInterval(() => {
+      void resolveVideo()
+    }, 3_000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [
+    lobby?.phase,
+    resolveRoundIntroVideo,
+    roundState?.gameId,
+    roundState?.introVideoRequestId,
+    roundState?.introVideoUrl,
+    roundState?.roundNumber,
+  ])
 
   useEffect(() => {
     if (!roundState || roundState.phase !== 'round_loading' || !roundState.roundNumber) {
@@ -249,28 +332,31 @@ function HostWaitingRoom() {
   if (lobby.phase === 'game_introduction') {
     const introRoundNumber = (roundState?.roundNumber ?? 0) + 1
     const isRoundOneIntro = introRoundNumber === 1
-    const showIntroVideo = isRoundOneIntro && Boolean(lobby.introVideo)
-    const canStartRoundOne = openingStage === 'briefing'
+    const showIntroVideo = isRoundOneIntro
+      ? Boolean(lobby.introVideo)
+      : Boolean(roundState?.introVideoUrl)
+    const introVideoSrc = isRoundOneIntro ? lobby.introVideo : (roundState?.introVideoUrl ?? '')
+    const canStartRound = openingStage === 'briefing'
     const startRoundLabel = isStarting
       ? `Starting Round ${introRoundNumber}...`
       : `Start Round ${introRoundNumber}`
 
     return (
       <PageShell
-        eyebrow="Main Display"
-        title="Round Introduction"
+        eyebrow={`Round ${introRoundNumber} of...`}
+        title={roundState?.scenarioTitle}
       >
         <section className="grid gap-4">
           <HostEstablishingStage
             event={roundState?.escalation ?? roundState?.event ?? lobby.event}
-            introVideo={lobby.introVideo}
+            introVideo={introVideoSrc}
             onVideoEnded={() => setOpeningStage('briefing')}
             onVideoError={() => {
               setVideoFailed(true)
               setOpeningStage('briefing')
             }}
             onStartRound={handleStart}
-            startRoundDisabled={isStarting || !canStartRoundOne}
+            startRoundDisabled={isStarting || !canStartRound}
             startRoundLabel={startRoundLabel}
             scenarioTitle={lobby.scenarioTitle}
             showVideo={showIntroVideo}

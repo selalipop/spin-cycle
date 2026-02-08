@@ -276,6 +276,14 @@ export default defineSchema({
     escalation: v.optional(v.string()),
 
     /**
+     * Optional generated intro video state for this round. Populated when the
+     * previous round resolves and we enqueue a FAL video job for this round.
+     */
+    intro_video_request_id: v.optional(v.string()),
+    intro_video_storage_id: v.optional(v.id("_storage")),
+    intro_video_error: v.optional(v.string()),
+
+    /**
      * Who earned bonus credits this round. Null until processing completes.
      * - quality: factions that had at least one action score effectiveness >= 7
      * - highest_impact: the single faction with highest impact
