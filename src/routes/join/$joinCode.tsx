@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Chip, Input, Spinner } from '@heroui/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
 import { AvatarPicker } from '~/components/lobby/avatar-picker'
 import { FactionCard } from '~/components/lobby/faction-card'
 import { PageShell } from '~/components/lobby/page-shell'
-import { getSavedPlayerId, getOrCreateSessionId, savePlayerRoute } from '~/lib/session'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
+import { Spinner } from '~/components/ui/spinner'
+import { DEFAULT_AVATAR_PATH } from '~/lib/avatars'
+import { getOrCreateSessionId, getSavedPlayerId, savePlayerRoute } from '~/lib/session'
 
 export const Route = createFileRoute('/join/$joinCode')({
   component: JoinGamePage,
@@ -20,17 +25,13 @@ function JoinGamePage() {
   const joinGame = useMutation(api.lobby.joinGame)
 
   const [playerName, setPlayerName] = useState('')
-  const [avatar, setAvatar] = useState('🗞️')
+  const [avatar, setAvatar] = useState(DEFAULT_AVATAR_PATH)
   const [selectedFactionId, setSelectedFactionId] = useState<string | null>(null)
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!game?.factions.length) {
-      return
-    }
-
-    if (selectedFactionId) {
+    if (!game?.factions.length || selectedFactionId) {
       return
     }
 
@@ -56,8 +57,8 @@ function JoinGamePage() {
       return
     }
 
-    if (game.phase !== 'lobby') {
-      setError('This game is already in progress.')
+    if (game.phase !== 'game_lobby') {
+      setError('This room already started. Ask the host for the next game code.')
       return
     }
 
@@ -67,7 +68,7 @@ function JoinGamePage() {
     }
 
     if (!playerName.trim()) {
-      setError('Enter your name to join.')
+      setError('Add your name first.')
       return
     }
 
@@ -87,19 +88,19 @@ function JoinGamePage() {
       savePlayerRoute(result.gameId, result.playerId)
       window.location.assign(`/game/${result.gameId}/player/${result.playerId}`)
     } catch {
-      setError('Could not join this game. Try a different faction or refresh.')
+      setError('Could not join right now. Try another faction or refresh.')
       setIsJoining(false)
     }
   }
 
   if (game === undefined) {
     return (
-      <PageShell title="Joining Game" subtitle="Loading lobby...">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="flex items-center gap-3 py-6">
-            <Spinner />
-            <p className="text-sm text-zinc-300">Looking up game code {normalizedJoinCode}...</p>
-          </Card.Content>
+      <PageShell title="Finding Room" subtitle="Checking that join code.">
+        <Card className="neo-panel py-0">
+          <CardContent className="flex items-center gap-3 px-6 py-6">
+            <Spinner className="size-5 text-black" />
+            <p className="text-sm text-black/75">Looking up code {normalizedJoinCode}...</p>
+          </CardContent>
         </Card>
       </PageShell>
     )
@@ -107,12 +108,18 @@ function JoinGamePage() {
 
   if (game === null) {
     return (
-      <PageShell title="Game Not Found" subtitle="Double-check the join code and try again.">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="space-y-4 py-6">
-            <p className="text-sm text-zinc-300">No game exists for code {normalizedJoinCode}.</p>
-            <Button onPress={() => window.location.assign('/')}>Back to Home</Button>
-          </Card.Content>
+      <PageShell title="Room Not Found" subtitle="This code does not match an active room.">
+        <Card className="neo-panel py-0">
+          <CardContent className="space-y-4 px-6 py-6">
+            <p className="text-sm text-black/75">No game exists for code {normalizedJoinCode}.</p>
+            <Button
+              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              onClick={() => window.location.assign('/')}
+              type="button"
+            >
+              Back Home
+            </Button>
+          </CardContent>
         </Card>
       </PageShell>
     )
@@ -121,52 +128,63 @@ function JoinGamePage() {
   return (
     <PageShell
       eyebrow={`Code ${game.joinCode}`}
-      subtitle="Choose your identity and faction before the host starts."
-      title="Join Newsroom"
+      subtitle="Pick your name, avatar, and faction before round one starts."
+      title="Join Spin Cycle"
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr]">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Header>
-            <Card.Title>Player Setup</Card.Title>
-          </Card.Header>
-          <Card.Content className="space-y-4">
+        <Card className="neo-panel neo-grid gap-4 py-4">
+          <CardHeader className="gap-3 pb-0">
+            <CardTitle className="font-display text-3xl text-black">Player Setup</CardTitle>
+            <CardDescription className="text-black/75">
+              This is your identity for the whole match.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pb-2">
             <Input
               aria-label="Player name"
+              className="h-11 border-2 border-black bg-white text-black placeholder:text-black/45"
               maxLength={24}
               onChange={(event) => setPlayerName(event.currentTarget.value)}
               placeholder="Your name"
               value={playerName}
             />
+
             <AvatarPicker onChange={setAvatar} value={avatar} />
+
             <Button
-              className="w-full"
-              isDisabled={isJoining || !selectedFactionId || game.phase !== 'lobby'}
-              onPress={handleJoin}
+              className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              disabled={isJoining || !selectedFactionId || game.phase !== 'game_lobby'}
+              onClick={handleJoin}
+              type="button"
             >
-              {isJoining ? 'Joining...' : 'Join'}
+              {isJoining ? 'Joining...' : 'Join Team'}
             </Button>
-            {game.phase !== 'lobby' ? (
-              <Chip className="bg-amber-600/25 text-amber-200">
-                Host already started this game.
-              </Chip>
+
+            {game.phase !== 'game_lobby' ? (
+              <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black">
+                Host already started this room.
+              </Badge>
             ) : null}
+
             {error ? (
-              <Chip className="bg-rose-600/25 text-rose-200">
+              <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
                 {error}
-              </Chip>
+              </Badge>
             ) : null}
-          </Card.Content>
+          </CardContent>
         </Card>
 
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Header>
-            <Card.Title>Pick Your Faction</Card.Title>
-            <Card.Description>Each team has a distinct media style and objective.</Card.Description>
-          </Card.Header>
-          <Card.Content className="grid gap-3 md:grid-cols-2">
+        <Card className="neo-panel neo-grid gap-4 py-4">
+          <CardHeader className="gap-3 pb-0">
+            <CardTitle className="font-display text-3xl text-black">Choose Your Faction</CardTitle>
+            <CardDescription className="text-black/75">
+              Every faction wants public sentiment to land in different places.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 pb-2 md:grid-cols-2">
             {game.factions.map((faction) => (
               <FactionCard
-                actionLabel={selectedFactionId === faction.id ? 'Ready' : 'Choose Faction'}
+                actionLabel={selectedFactionId === faction.id ? 'Ready' : 'Choose Team'}
                 code={faction.code}
                 description={faction.description}
                 key={faction.id}
@@ -176,7 +194,7 @@ function JoinGamePage() {
                 selected={selectedFactionId === faction.id}
               />
             ))}
-          </Card.Content>
+          </CardContent>
         </Card>
       </div>
     </PageShell>

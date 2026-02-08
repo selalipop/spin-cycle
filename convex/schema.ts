@@ -1,6 +1,7 @@
 // convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { gamePhase } from "./game_phase";
 
 // =============================================================================
 // SHARED FIELD DEFINITIONS
@@ -94,7 +95,7 @@ export default defineSchema({
     /** Human-readable scenario title shown on the big screen. */
     scenario_title: v.optional(v.string()),
 
-    /** Public path to intro video played during establishing phase. */
+    /** Public path to intro video played during introduction phase. */
     intro_video: v.optional(v.string()),
 
     /** The seed event, e.g. "A second Golden Gate Bridge appeared overnight..." */
@@ -105,32 +106,25 @@ export default defineSchema({
 
     /**
      * Which round is currently active (1-based). Missing means no round has
-     * started yet (lobby + establishing).
+     * started yet (lobby + introduction).
      */
     current_round: v.optional(v.number()),
 
     /**
      * State machine phase:
-     * lobby → establishing → planning → submitting → resolving → results
-     *   → planning... → game_over
+     * game_lobby → game_introduction → round_loading → round_voting
+     *   → round_processing → round_results ... → game_ending → game_results
      *
-     * - lobby: players joining, picking factions
-     * - establishing: host introduces the premise before round 1 starts
-     * - planning: players see sentiments, credits, goals, briefings, pick an action
-     * - submitting: players write content for their chosen action
-     * - resolving: AI is crunching — no player input, big screen shows loading
-     * - results: big screen shows the news cycle, sentiments animate, scores update
-     * - game_over: final scores, epilogue, winner
+     * - game_lobby: players joining, picking factions
+     * - game_introduction: host introduces the premise before round 1 starts
+     * - round_loading: round setup + briefing generation
+     * - round_voting: players choose and submit their faction action content
+     * - round_processing: submissions locked, AI processing
+     * - round_results: show round recap, sentiment movement, score updates
+     * - game_ending: post-round narrative wrap-up before final standings
+     * - game_results: final scores, epilogue, winner
      */
-    phase: v.union(
-      v.literal("lobby"),
-      v.literal("establishing"),
-      v.literal("planning"),
-      v.literal("submitting"),
-      v.literal("resolving"),
-      v.literal("results"),
-      v.literal("game_over"),
-    ),
+    phase: gamePhase,
 
     /** Current public sentiment. All start at 50. */
     sentiments: sentiments,
@@ -214,7 +208,7 @@ export default defineSchema({
     /** Public UUID used in browser URLs, e.g. /game/:gameId/player/:playerId. */
     public_id: v.string(),
     name: v.string(),
-    /** Emoji chosen in join flow. */
+    /** Public avatar image path from the built-in set, e.g. /avatars/avatar_1.png. */
     avatar: v.string(),
 
     /**
@@ -265,18 +259,18 @@ export default defineSchema({
     /** Sentiment snapshot BEFORE this round's actions */
     sentiment_before: sentiments,
 
-    /** Sentiment snapshot AFTER resolution. Null until resolving completes. */
+    /** Sentiment snapshot AFTER processing. Null until processing completes. */
     sentiment_after: v.optional(sentiments),
 
     /**
      * The big AI output — the news cycle narrative.
      * Headlines, chyrons, social posts, public reactions.
-     * This is what goes on the big screen. Null until resolving completes.
+     * This is what goes on the big screen. Null until processing completes.
      */
     narrative: v.optional(v.string()),
 
     /**
-     * Who earned bonus credits this round. Null until resolving completes.
+     * Who earned bonus credits this round. Null until processing completes.
      * - quality: factions that had at least one action score effectiveness >= 7
      * - highest_impact: the single faction with highest impact
      *   (impact = cost × effectiveness)
@@ -315,27 +309,13 @@ export default defineSchema({
 
     /**
      * Tracks which factions have submitted their action(s) this round.
-     * Used to determine when to transition from submitting → resolving.
+     * Used to determine when to transition from round_voting → round_processing.
      *
      * Currently the game expects 1 action per faction per round,
      * but this isn't hardcoded — we just check that every faction
-     * has at least one submitted action before resolving.
+     * has at least one submitted action before processing.
      */
     faction_submitted: v.record(v.id("factions"), v.boolean()),
-
-    /**
-     * Planning lifecycle for this round.
-     * - pending: round created, briefings not started
-     * - generating: briefing generation in progress
-     * - ready: briefings are available and game has entered submitting
-     */
-    planning_status: v.optional(
-      v.union(
-        v.literal("pending"),
-        v.literal("generating"),
-        v.literal("ready"),
-      ),
-    ),
 
     /** Timestamp when planning briefings were finished. */
     planning_generated_at_ms: v.optional(v.number()),
@@ -353,9 +333,9 @@ export default defineSchema({
   // Currently 1 per faction per round, but the schema supports more.
   //
   // Lifecycle:
-  // PLANNING phase:  player picks an action → row created with empty content
-  // SUBMITTING phase: player writes content → content filled in
-  // RESOLVING phase:  AI grades it → effectiveness, grading_rubric, impact
+  // ROUND_LOADING phase: prepare round context + briefings
+  // ROUND_VOTING phase: players submit their action content
+  // ROUND_PROCESSING phase: AI grades it → effectiveness, grading_rubric, impact
   // ===========================================================================
   submitted_actions: defineTable({
     game_id: v.id("games"),

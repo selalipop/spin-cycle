@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, Card, Chip, Spinner } from '@heroui/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useAction, useMutation, useQuery } from 'convex/react'
 import { api } from '../../../../convex/_generated/api'
+import type { OpeningStage } from '~/components/lobby/host-establishing-stage'
 import { PhaseHoldingScreen } from '~/components/gameplay/phase-holding-screen'
 import { SentimentBars } from '~/components/gameplay/sentiment-bars'
-import {
-  HostEstablishingStage,
-  type EstablishingStage,
-} from '~/components/lobby/host-establishing-stage'
+import { HostEstablishingStage } from '~/components/lobby/host-establishing-stage'
 import { FactionCard } from '~/components/lobby/faction-card'
 import { PageShell } from '~/components/lobby/page-shell'
 import { PlayerListItem } from '~/components/lobby/player-list-item'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Spinner } from '~/components/ui/spinner'
 import { getFactionTheme } from '~/lib/factions'
 
 export const Route = createFileRoute('/game/$gameId/host')({
@@ -25,37 +26,34 @@ function HostWaitingRoom() {
 
   const startGame = useMutation(api.lobby.startGame)
   const startRoundOne = useMutation(api.lobby.startRoundOne)
-  const advanceSubmittingToResolving = useMutation(
-    api.gameplay.advanceSubmittingToResolving,
-  )
+  const advanceSubmittingToResolving = useMutation(api.gameplay.advanceSubmittingToResolving)
   const generatePlanningBriefings = useAction(api.gameplay.generatePlanningBriefings)
 
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [videoFailed, setVideoFailed] = useState(false)
-  const [establishingStage, setEstablishingStage] = useState<EstablishingStage>('loading')
-  const [planningStatus, setPlanningStatus] = useState<
-    'idle' | 'running' | 'ready' | 'error'
-  >('idle')
-  const [planningFallbackCount, setPlanningFallbackCount] = useState(0)
+  const [openingStage, setOpeningStage] = useState<OpeningStage>('loading')
+  const [planningStatus, setPlanningStatus] = useState<'idle' | 'running' | 'ready' | 'error'>(
+    'idle',
+  )
   const [nowMs, setNowMs] = useState(() => Date.now())
 
   const planningTriggerRef = useRef<string | null>(null)
   const timeoutTriggerRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
-    if (!lobby || lobby.phase !== 'establishing') {
-      setEstablishingStage('loading')
+    if (!lobby || lobby.phase !== 'game_introduction') {
+      setOpeningStage('loading')
       setVideoFailed(false)
       return
     }
 
     setVideoFailed(false)
-    setEstablishingStage('loading')
+    setOpeningStage('loading')
 
     const timer = window.setTimeout(() => {
-      setEstablishingStage('video')
-    }, 1000)
+      setOpeningStage('video')
+    }, 800)
 
     return () => {
       window.clearTimeout(timer)
@@ -63,11 +61,10 @@ function HostWaitingRoom() {
   }, [lobby?.gameId, lobby?.phase])
 
   useEffect(() => {
-    if (!roundState || roundState.phase !== 'planning' || !roundState.roundNumber) {
+    if (!roundState || roundState.phase !== 'round_loading' || !roundState.roundNumber) {
       if (planningStatus !== 'error') {
         setPlanningStatus('idle')
       }
-      setPlanningFallbackCount(0)
       return
     }
 
@@ -79,23 +76,10 @@ function HostWaitingRoom() {
 
     planningTriggerRef.current = planningKey
     setPlanningStatus('running')
-    setPlanningFallbackCount(0)
 
     void generatePlanningBriefings({ gameId: roundState.gameId })
-      .then((result) => {
-        if (result.status === 'generated') {
-          setPlanningStatus('ready')
-          setPlanningFallbackCount(result.fallbackCount)
-          return
-        }
-
-        if (result.status === 'noop') {
-          setPlanningStatus('ready')
-          setPlanningFallbackCount(0)
-          return
-        }
-
-        setPlanningStatus('running')
+      .then(() => {
+        setPlanningStatus('ready')
       })
       .catch(() => {
         setPlanningStatus('error')
@@ -104,7 +88,7 @@ function HostWaitingRoom() {
   }, [generatePlanningBriefings, planningStatus, roundState])
 
   useEffect(() => {
-    if (!roundState || roundState.phase !== 'submitting') {
+    if (!roundState || roundState.phase !== 'round_voting') {
       return
     }
 
@@ -120,7 +104,7 @@ function HostWaitingRoom() {
   useEffect(() => {
     if (
       !roundState ||
-      roundState.phase !== 'submitting' ||
+      roundState.phase !== 'round_voting' ||
       !roundState.submittingDeadlineMs ||
       !roundState.roundNumber
     ) {
@@ -140,7 +124,7 @@ function HostWaitingRoom() {
       gameId: roundState.gameId,
       reason: 'timeout',
     }).catch(() => {
-      setError('Could not advance round after timeout. Please refresh.')
+      setError('Could not advance after timeout. Please refresh.')
     })
   }, [advanceSubmittingToResolving, nowMs, roundState])
 
@@ -157,7 +141,7 @@ function HostWaitingRoom() {
       return ''
     }
 
-    return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl)}`
+    return `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(joinUrl)}`
   }, [joinUrl])
 
   const handleStart = async () => {
@@ -165,7 +149,7 @@ function HostWaitingRoom() {
       return
     }
 
-    if (lobby.phase === 'establishing' && establishingStage !== 'brief') {
+    if (lobby.phase === 'game_introduction' && openingStage !== 'briefing') {
       return
     }
 
@@ -173,13 +157,13 @@ function HostWaitingRoom() {
     setIsStarting(true)
 
     try {
-      if (lobby.phase === 'lobby') {
+      if (lobby.phase === 'game_lobby') {
         await startGame({ gameId: lobby.gameId })
-      } else if (lobby.phase === 'establishing') {
+      } else if (lobby.phase === 'game_introduction') {
         await startRoundOne({ gameId: lobby.gameId })
       }
     } catch {
-      setError('Could not start game. Please try again.')
+      setError('Could not continue the game. Please try again.')
     } finally {
       setIsStarting(false)
     }
@@ -187,12 +171,12 @@ function HostWaitingRoom() {
 
   if (lobby === undefined) {
     return (
-      <PageShell title="Host Waiting Room" subtitle="Loading game state...">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="flex items-center gap-3 py-6">
-            <Spinner />
-            <p className="text-sm text-zinc-300">Loading host dashboard...</p>
-          </Card.Content>
+      <PageShell title="Loading Host Desk" subtitle="Syncing room state.">
+        <Card className="neo-panel py-0">
+          <CardContent className="flex items-center gap-3 px-6 py-6">
+            <Spinner className="size-5 text-black" />
+            <p className="text-sm text-black/75">Loading host dashboard...</p>
+          </CardContent>
         </Card>
       </PageShell>
     )
@@ -200,131 +184,156 @@ function HostWaitingRoom() {
 
   if (lobby === null) {
     return (
-      <PageShell title="Game Not Found" subtitle="This host link is invalid or expired.">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="space-y-4 py-6">
-            <p className="text-sm text-zinc-300">No game exists for this host URL.</p>
-            <Button onPress={() => window.location.assign('/')}>Back to Home</Button>
-          </Card.Content>
+      <PageShell title="Room Not Found" subtitle="This host link is invalid or expired.">
+        <Card className="neo-panel py-0">
+          <CardContent className="space-y-4 px-6 py-6">
+            <p className="text-sm text-black/75">Start a new game from the home screen.</p>
+            <Button
+              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              onClick={() => window.location.assign('/')}
+              type="button"
+            >
+              Back Home
+            </Button>
+          </CardContent>
         </Card>
       </PageShell>
     )
   }
 
-  if (lobby.phase === 'establishing') {
-    const canStartRoundOne = establishingStage === 'brief'
+  if (lobby.phase === 'game_introduction') {
+    const canStartRoundOne = openingStage === 'briefing'
 
     return (
       <PageShell
-        eyebrow="Main Screen"
-        subtitle="Playing intro content before teams enter round 1 planning."
-        title="Establishing Premise"
+        eyebrow="Main Display"
+        subtitle="Run the opening scene, then launch round one."
+        title="Opening Scene"
       >
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,300px)_1fr]">
-          <Card className="border border-zinc-700/70 bg-zinc-900/70">
-            <Card.Header>
-              <Card.Title>Control Desk</Card.Title>
-              <Card.Description>
-                Advance once the establishing sequence is done.
-              </Card.Description>
-            </Card.Header>
-            <Card.Content className="space-y-4">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,320px)_1fr]">
+          <Card className="neo-panel neo-grid gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Control Desk</CardTitle>
+              <CardDescription className="text-black/75">
+                Continue when the clip and story brief are complete.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pb-2">
               <div className="space-y-1">
-                <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Join Code</p>
-                <p className="text-4xl font-semibold tracking-[0.2em] text-zinc-100">
-                  {lobby.joinCode}
-                </p>
+                <p className="neo-label text-black/60">Join Code</p>
+                <p className="neo-code text-4xl font-semibold text-black">{lobby.joinCode}</p>
               </div>
-              <Chip className="bg-zinc-700/70 text-zinc-100">
+
+              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
                 {lobby.totalPlayers} player{lobby.totalPlayers === 1 ? '' : 's'} connected
-              </Chip>
-              <Chip className="bg-amber-500/25 text-amber-200">Phase: {lobby.phase}</Chip>
+              </Badge>
+
               <Button
-                className="w-full"
-                isDisabled={isStarting || !canStartRoundOne}
-                onPress={handleStart}
+                className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+                disabled={isStarting || !canStartRoundOne}
+                onClick={handleStart}
+                type="button"
               >
                 {isStarting
                   ? 'Starting Round 1...'
-                  : establishingStage === 'loading'
-                    ? 'Loading Broadcast...'
-                    : establishingStage === 'video'
-                      ? 'Waiting For Intro To Finish'
+                  : openingStage === 'loading'
+                    ? 'Preparing Scene...'
+                    : openingStage === 'video'
+                      ? 'Finish Clip To Continue'
                       : 'Start Round 1'}
               </Button>
+
               {videoFailed ? (
-                <Chip className="bg-amber-500/25 text-amber-200">
-                  Video failed to load. You can still continue.
-                </Chip>
+                <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black">
+                  Intro clip failed to load. You can still continue.
+                </Badge>
               ) : null}
-              {error ? <Chip className="bg-rose-600/25 text-rose-200">{error}</Chip> : null}
-            </Card.Content>
+
+              {error ? (
+                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+                  {error}
+                </Badge>
+              ) : null}
+            </CardContent>
           </Card>
 
           <HostEstablishingStage
             event={lobby.event}
             introVideo={lobby.introVideo}
-            onVideoEnded={() => setEstablishingStage('brief')}
+            onVideoEnded={() => setOpeningStage('briefing')}
             onVideoError={() => {
               setVideoFailed(true)
-              setEstablishingStage('brief')
+              setOpeningStage('briefing')
             }}
             scenarioTitle={lobby.scenarioTitle}
-            stage={establishingStage}
+            stage={openingStage}
           />
         </section>
       </PageShell>
     )
   }
 
-  if (lobby.phase === 'lobby') {
+  if (lobby.phase === 'game_lobby') {
     return (
       <PageShell
         eyebrow="Host Console"
-        subtitle="Players are joining now. Start when you are ready."
-        title="Newsroom Lobby"
+        subtitle="Get players in, then start the opening scene."
+        title="Spin Cycle Lobby"
       >
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,340px)_1fr]">
-          <Card className="border border-zinc-700/70 bg-zinc-900/70">
-            <Card.Header>
-              <Card.Title>Join Code</Card.Title>
-              <Card.Description>Players join with this short code.</Card.Description>
-            </Card.Header>
-            <Card.Content className="space-y-4">
-              <p className="text-5xl font-semibold tracking-[0.25em] text-zinc-100">
-                {lobby.joinCode}
-              </p>
-              <Chip className="bg-zinc-700/70 text-zinc-100">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,360px)_1fr]">
+          <Card className="neo-panel neo-grid gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Room Access</CardTitle>
+              <CardDescription className="text-black/75">
+                Share this code or QR so everyone can join.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pb-2">
+              <p className="neo-code text-5xl font-semibold text-black">{lobby.joinCode}</p>
+
+              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
                 {lobby.totalPlayers} player{lobby.totalPlayers === 1 ? '' : 's'} connected
-              </Chip>
+              </Badge>
+
               {joinUrl ? (
-                <p className="break-all text-xs text-zinc-400" title={joinUrl}>
+                <p className="break-all rounded-xl border-2 border-black bg-white px-3 py-2 font-mono text-xs text-black/70" title={joinUrl}>
                   {joinUrl}
                 </p>
               ) : null}
+
               {qrCodeUrl ? (
                 <img
                   alt="QR code for joining this game"
-                  className="mx-auto rounded-xl border border-zinc-700/70 bg-white p-2"
+                  className="mx-auto w-full max-w-[260px] rounded-xl border-2 border-black bg-white p-2"
                   src={qrCodeUrl}
                 />
               ) : null}
-            </Card.Content>
-            <Card.Footer className="flex flex-col items-stretch gap-3">
-              <Button className="w-full" isDisabled={isStarting} onPress={handleStart}>
-                {isStarting ? 'Starting...' : 'Start Establishing'}
+
+              <Button
+                className="h-11 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+                disabled={isStarting}
+                onClick={handleStart}
+                type="button"
+              >
+                {isStarting ? 'Starting...' : 'Start Opening Scene'}
               </Button>
-              <Chip className="bg-zinc-700/70 text-zinc-100">Phase: {lobby.phase}</Chip>
-              {error ? <Chip className="bg-rose-600/25 text-rose-200">{error}</Chip> : null}
-            </Card.Footer>
+
+              {error ? (
+                <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+                  {error}
+                </Badge>
+              ) : null}
+            </CardContent>
           </Card>
 
-          <Card className="border border-zinc-700/70 bg-zinc-900/70">
-            <Card.Header>
-              <Card.Title>Faction Rosters</Card.Title>
-              <Card.Description>Live players grouped by faction.</Card.Description>
-            </Card.Header>
-            <Card.Content className="grid gap-4 md:grid-cols-2">
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Faction Rosters</CardTitle>
+              <CardDescription className="text-black/75">
+                Live player list by faction.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 pb-2 md:grid-cols-2">
               {lobby.factions.map((faction) => (
                 <div className="space-y-3" key={faction.id}>
                   <FactionCard
@@ -334,10 +343,10 @@ function HostWaitingRoom() {
                     playerCount={faction.playerCount}
                   />
                   {faction.players.length === 0 ? (
-                    <Card className="border border-zinc-700/70 bg-zinc-900/80">
-                      <Card.Content className="py-3">
-                        <p className="text-sm text-zinc-400">No players yet.</p>
-                      </Card.Content>
+                    <Card className="neo-panel-soft py-0">
+                      <CardContent className="px-4 py-3">
+                        <p className="text-sm text-black/65">No players yet.</p>
+                      </CardContent>
                     </Card>
                   ) : (
                     faction.players.map((player) => (
@@ -346,7 +355,7 @@ function HostWaitingRoom() {
                   )}
                 </div>
               ))}
-            </Card.Content>
+            </CardContent>
           </Card>
         </section>
       </PageShell>
@@ -355,12 +364,12 @@ function HostWaitingRoom() {
 
   if (roundState === undefined) {
     return (
-      <PageShell title="Loading Round" subtitle="Syncing big-screen round state...">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="flex items-center gap-3 py-6">
-            <Spinner />
-            <p className="text-sm text-zinc-300">Loading round data...</p>
-          </Card.Content>
+      <PageShell title="Loading Round" subtitle="Pulling current round status.">
+        <Card className="neo-panel py-0">
+          <CardContent className="flex items-center gap-3 px-6 py-6">
+            <Spinner className="size-5 text-black" />
+            <p className="text-sm text-black/75">Loading round data...</p>
+          </CardContent>
         </Card>
       </PageShell>
     )
@@ -368,60 +377,59 @@ function HostWaitingRoom() {
 
   if (roundState === null) {
     return (
-      <PageShell title="Game Not Found" subtitle="No active game for this host link.">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Content className="space-y-4 py-6">
-            <p className="text-sm text-zinc-300">Try creating a new game from the homepage.</p>
-            <Button onPress={() => window.location.assign('/')}>Back to Home</Button>
-          </Card.Content>
+      <PageShell title="Room Not Found" subtitle="No active game for this host link.">
+        <Card className="neo-panel py-0">
+          <CardContent className="space-y-4 px-6 py-6">
+            <p className="text-sm text-black/75">Try creating a new game from the homepage.</p>
+            <Button
+              className="h-10 border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              onClick={() => window.location.assign('/')}
+              type="button"
+            >
+              Back Home
+            </Button>
+          </CardContent>
         </Card>
       </PageShell>
     )
   }
 
-  if (roundState.phase === 'planning') {
+  if (roundState.phase === 'round_loading') {
     return (
       <PageShell
-        eyebrow="Main Screen"
-        subtitle="Generating faction briefings before submissions open."
-        title={`Round ${roundState.roundNumber ?? 1} Planning`}
+        eyebrow="Main Display"
+        subtitle="Briefings are being prepared for each faction."
+        title={`Round ${roundState.roundNumber ?? 1}: Briefings Incoming`}
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
-          <Card className="border border-zinc-700/70 bg-zinc-950/70">
-            <Card.Header>
-              <Card.Title>Round Status</Card.Title>
-              <Card.Description>
-                Main screen auto-generates all faction briefings for this round.
-              </Card.Description>
-            </Card.Header>
-            <Card.Content className="space-y-4">
-              <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/70 p-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-100">{roundState.event}</p>
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Round Status</CardTitle>
+              <CardDescription className="text-black/75">
+                Teams unlock once their briefings are ready.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pb-2">
+              <div className="neo-panel-soft p-4">
+                <p className="neo-label text-black/60">World State</p>
+                <p className="mt-2 text-sm leading-relaxed text-black/85">{roundState.event}</p>
               </div>
 
-              <Chip
+              <Badge
                 className={
                   planningStatus === 'ready'
-                    ? 'bg-emerald-600/25 text-emerald-200'
+                    ? 'w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-[0.68rem] text-black'
                     : planningStatus === 'error'
-                      ? 'bg-rose-600/25 text-rose-200'
-                      : 'bg-amber-600/25 text-amber-200'
+                      ? 'w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground'
+                      : 'w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] text-black'
                 }
               >
                 {planningStatus === 'ready'
-                  ? 'Briefings Ready'
+                  ? 'All briefings ready'
                   : planningStatus === 'error'
-                    ? 'Generation Failed'
-                    : 'Generating Briefings...'}
-              </Chip>
-
-              {planningStatus === 'ready' && planningFallbackCount > 0 ? (
-                <Chip className="bg-zinc-700/70 text-zinc-100">
-                  {planningFallbackCount} faction
-                  {planningFallbackCount === 1 ? '' : 's'} used fallback briefing copy
-                </Chip>
-              ) : null}
+                    ? 'Briefing generation failed'
+                    : 'Generating briefings...'}
+              </Badge>
 
               <div className="space-y-2">
                 {roundState.factions.map((faction) => {
@@ -429,113 +437,131 @@ function HostWaitingRoom() {
 
                   return (
                     <div
-                      className={`flex items-center justify-between rounded-xl border ${theme.borderClass} ${theme.softClass} px-3 py-2`}
+                      className={`neo-panel-soft flex items-center justify-between gap-3 px-3 py-2 ${theme.softClass}`}
                       key={faction.id}
                     >
-                      <p className={`text-sm font-medium ${theme.accentTextClass}`}>{faction.name}</p>
-                      <Chip className={faction.hasBriefing ? 'bg-emerald-600/25 text-emerald-200' : 'bg-zinc-700/70 text-zinc-100'} size="sm">
-                        {faction.hasBriefing ? 'Brief Ready' : 'Pending'}
-                      </Chip>
+                      <p className={`font-heading text-sm ${theme.accentTextClass}`}>{faction.name}</p>
+                      <Badge
+                        className={
+                          faction.hasBriefing
+                            ? 'rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
+                            : 'rounded-full border border-black bg-white px-2 py-0.5 text-[0.62rem] uppercase text-black'
+                        }
+                      >
+                        {faction.hasBriefing ? 'Ready' : 'Pending'}
+                      </Badge>
                     </div>
                   )
                 })}
               </div>
-            </Card.Content>
+            </CardContent>
           </Card>
 
           <SentimentBars sentiments={roundState.sentiments} />
         </section>
 
-        {error ? <Chip className="w-fit bg-rose-600/25 text-rose-200">{error}</Chip> : null}
+        {error ? (
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+            {error}
+          </Badge>
+        ) : null}
       </PageShell>
     )
   }
 
-  if (roundState.phase === 'submitting') {
+  if (roundState.phase === 'round_voting') {
     const remainingMs = Math.max((roundState.submittingDeadlineMs ?? nowMs) - nowMs, 0)
     const remainingSeconds = Math.ceil(remainingMs / 1000)
 
     return (
       <PageShell
-        eyebrow="Main Screen"
-        subtitle="Teams are writing their one action for this round."
-        title={`Round ${roundState.roundNumber ?? 1} Submitting`}
+        eyebrow="Main Display"
+        subtitle="Teams are crafting one move each before the timer ends."
+        title={`Round ${roundState.roundNumber ?? 1}: Teams Are Crafting`}
       >
         <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
-          <Card className="border border-zinc-700/70 bg-zinc-950/70">
-            <Card.Header>
-              <Card.Title className="text-2xl">Submission Clock</Card.Title>
-              <Card.Description>Auto-advances when all teams submit or timer ends.</Card.Description>
-            </Card.Header>
-            <Card.Content className="space-y-4">
-              <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/80 p-4 text-center">
-                <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Time Remaining</p>
-                <p className="mt-2 text-6xl font-semibold text-zinc-100">{remainingSeconds}s</p>
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Round Clock</CardTitle>
+              <CardDescription className="text-black/75">
+                The round advances when all teams lock in or time runs out.
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4 pb-2">
+              <div className="neo-panel-soft p-4 text-center">
+                <p className="neo-label text-black/60">Time Remaining</p>
+                <p className="neo-code mt-2 text-6xl font-semibold text-black">{remainingSeconds}s</p>
               </div>
 
-              <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/70 p-4">
-                <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">World State</p>
-                <p className="mt-2 text-sm leading-relaxed text-zinc-100">{roundState.event}</p>
+              <div className="neo-panel-soft p-4">
+                <p className="neo-label text-black/60">World State</p>
+                <p className="mt-2 text-sm leading-relaxed text-black/85">{roundState.event}</p>
               </div>
 
-              <Chip className="bg-zinc-700/70 text-zinc-100">
-                {roundState.submittedFactionCount}/{roundState.participatingFactionCount} factions submitted
-              </Chip>
-            </Card.Content>
+              <Badge className="w-fit rounded-full border border-black bg-white px-3 py-1 text-[0.68rem] text-black">
+                {roundState.submittedFactionCount}/{roundState.participatingFactionCount} factions locked
+              </Badge>
+            </CardContent>
           </Card>
 
           <SentimentBars sentiments={roundState.sentiments} />
         </section>
 
-        <Card className="border border-zinc-700/70 bg-zinc-950/70">
-          <Card.Header>
-            <Card.Title>Faction Submission Status</Card.Title>
-            <Card.Description>First valid submit locks each faction for this round.</Card.Description>
-          </Card.Header>
-          <Card.Content className="grid gap-3 pb-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="neo-panel gap-4 py-4">
+          <CardHeader className="gap-3 pb-0">
+            <CardTitle className="font-display text-3xl text-black">Faction Status</CardTitle>
+            <CardDescription className="text-black/75">
+              First valid move locks each faction for the round.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-3 pb-2 md:grid-cols-2 lg:grid-cols-4">
             {roundState.factions.map((faction) => {
               const theme = getFactionTheme(faction.code)
 
               return (
-                <Card className={`border ${theme.borderClass} ${theme.softClass}`} key={faction.id}>
-                  <Card.Content className="space-y-3 py-4">
-                    <p className={`font-semibold ${theme.accentTextClass}`}>{faction.name}</p>
-                    <Chip
+                <Card className={`neo-panel gap-3 py-4 ${theme.softClass} ${theme.borderClass}`} key={faction.id}>
+                  <CardContent className="space-y-3 pb-0">
+                    <p className={`font-heading text-base ${theme.accentTextClass}`}>{faction.name}</p>
+                    <Badge
                       className={
                         faction.submitted
-                          ? 'bg-emerald-600/25 text-emerald-200'
-                          : 'bg-amber-600/25 text-amber-200'
+                          ? 'w-fit rounded-full border border-black bg-emerald-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
+                          : 'w-fit rounded-full border border-black bg-amber-300 px-2 py-0.5 text-[0.62rem] uppercase text-black'
                       }
-                      size="sm"
                     >
-                      {faction.submitted ? 'Submitted' : 'Waiting'}
-                    </Chip>
-                    <p className="text-xs text-zinc-300">
+                      {faction.submitted ? 'Locked In' : 'Waiting'}
+                    </Badge>
+                    <p className="text-xs text-black/70">
                       {faction.playerCount} player{faction.playerCount === 1 ? '' : 's'}
                     </p>
-                  </Card.Content>
+                  </CardContent>
                 </Card>
               )
             })}
-          </Card.Content>
+          </CardContent>
         </Card>
 
-        {error ? <Chip className="w-fit bg-rose-600/25 text-rose-200">{error}</Chip> : null}
+        {error ? (
+          <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.68rem] text-destructive-foreground">
+            {error}
+          </Badge>
+        ) : null}
       </PageShell>
     )
   }
 
-  if (roundState.phase === 'resolving') {
+  if (roundState.phase === 'round_processing') {
     return (
       <PageShell
-        eyebrow="Main Screen"
-        subtitle="Submissions are locked. Resolution is the next phase."
-        title={`Round ${roundState.roundNumber ?? 1} Resolving`}
+        eyebrow="Main Display"
+        subtitle="Moves are locked. We are scoring the narrative impact."
+        title={`Round ${roundState.roundNumber ?? 1}: Scoring the Spin`}
       >
         <PhaseHoldingScreen
-          description="Calculating round outcomes. This holding screen will be replaced with the full resolution broadcast."
-          label="Resolving"
-          title="Processing Narrative Impact"
+          description="Stand by while outcomes are calculated for every faction move."
+          label="Scoring The Spin"
+          title="Crunching Results"
         />
       </PageShell>
     )
@@ -543,15 +569,16 @@ function HostWaitingRoom() {
 
   return (
     <PageShell
-      eyebrow="Main Screen"
-      subtitle="The game has moved beyond the implemented round flow."
-      title="Newsroom In Progress"
+      eyebrow="Main Display"
+      subtitle="The next broadcast segment is not built yet."
+      title="Intermission"
     >
-      <Card className="border border-zinc-700/70 bg-zinc-900/70">
-        <Card.Content className="space-y-3 py-6">
-          <Chip className="bg-zinc-700/70 text-zinc-100">Phase: {roundState.phase}</Chip>
-          <p className="text-sm text-zinc-300">Gameplay beyond resolving is not implemented yet.</p>
-        </Card.Content>
+      <Card className="neo-panel py-0">
+        <CardContent className="space-y-3 px-6 py-6">
+          <p className="text-sm text-black/75">
+            Gameplay after this stage is still under construction.
+          </p>
+        </CardContent>
       </Card>
     </PageShell>
   )

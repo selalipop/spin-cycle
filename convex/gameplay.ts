@@ -4,6 +4,7 @@ import { OpenRouter } from '@openrouter/sdk'
 import { Liquid } from 'liquidjs'
 import { internal } from './_generated/api'
 import type { Doc, Id } from './_generated/dataModel'
+import { GamePhase, gamePhase } from './game_phase'
 import {
   action,
   internalMutation,
@@ -17,19 +18,8 @@ import { GENERATE_FACTION_BRIEF } from './prompts'
 const DEFAULT_OPENROUTER_MODEL = 'openai/gpt-4'
 const SUBMITTING_DURATION_MS = 60_000
 const MAX_SUBMISSION_CONTENT_LENGTH = 1800
-const GAME_PHASES = [
-  'lobby',
-  'establishing',
-  'planning',
-  'submitting',
-  'resolving',
-  'results',
-  'game_over',
-] as const
 
-type GamePhase = (typeof GAME_PHASES)[number]
-
-const sentimentsValidator = v.object({
+const sentiments = v.object({
   stability: v.number(),
   attention: v.number(),
   curiosity: v.number(),
@@ -37,27 +27,17 @@ const sentimentsValidator = v.object({
   government_blame: v.number(),
 })
 
-const scoringRowValidator = v.array(v.number())
+const scoringRow = v.array(v.number())
 
-const scoringValidator = v.object({
-  stability: scoringRowValidator,
-  attention: scoringRowValidator,
-  curiosity: scoringRowValidator,
-  corporate_blame: scoringRowValidator,
-  government_blame: scoringRowValidator,
+const scoring = v.object({
+  stability: scoringRow,
+  attention: scoringRow,
+  curiosity: scoringRow,
+  corporate_blame: scoringRow,
+  government_blame: scoringRow,
 })
 
-const gamePhaseValidator = v.union(
-  v.literal('lobby'),
-  v.literal('establishing'),
-  v.literal('planning'),
-  v.literal('submitting'),
-  v.literal('resolving'),
-  v.literal('results'),
-  v.literal('game_over'),
-)
-
-const actionOptionValidator = v.object({
+const actionOption = v.object({
   id: v.string(),
   name: v.string(),
   cost: v.number(),
@@ -67,18 +47,18 @@ const actionOptionValidator = v.object({
   affordable: v.boolean(),
 })
 
-const factionPlayerValidator = v.object({
+const factionPlayer = v.object({
   id: v.string(),
   name: v.string(),
   avatar: v.string(),
 })
 
-const briefValidator = v.object({
+const brief = v.object({
   goal: v.string(),
   briefing: v.string(),
 })
 
-const participatingFactionStatusValidator = v.object({
+const participatingFactionStatus = v.object({
   id: v.id('factions'),
   code: v.string(),
   name: v.string(),
@@ -88,7 +68,7 @@ const participatingFactionStatusValidator = v.object({
   hasBriefing: v.boolean(),
 })
 
-const submittedActionSummaryValidator = v.object({
+const submittedActionSummary = v.object({
   id: v.id('submitted_actions'),
   factionId: v.id('factions'),
   actionTypeId: v.string(),
@@ -96,9 +76,8 @@ const submittedActionSummaryValidator = v.object({
   cost: v.number(),
 })
 
-const planningGenerationStatusValidator = v.union(
+const planningGenerationStatus = v.union(
   v.literal('started'),
-  v.literal('generating'),
   v.literal('ready'),
   v.literal('noop'),
 )
@@ -111,17 +90,17 @@ export const getMainScreenRoundState = query({
     v.null(),
     v.object({
       gameId: v.string(),
-      phase: gamePhaseValidator,
+      phase: gamePhase,
       scenarioTitle: v.string(),
       event: v.string(),
-      sentiments: sentimentsValidator,
+      sentiments: sentiments,
       roundNumber: v.optional(v.number()),
       submittingDeadlineMs: v.optional(v.number()),
       participatingFactionCount: v.number(),
       submittedFactionCount: v.number(),
       allParticipatingSubmitted: v.boolean(),
-      factions: v.array(participatingFactionStatusValidator),
-      submittedActions: v.array(submittedActionSummaryValidator),
+      factions: v.array(participatingFactionStatus),
+      submittedActions: v.array(submittedActionSummary),
     }),
   ),
   handler: async (ctx, args) => {
@@ -186,7 +165,7 @@ export const getMainScreenRoundState = query({
 
     return {
       gameId: game.public_id,
-      phase: toGamePhase(game.phase),
+      phase: game.phase,
       scenarioTitle: game.scenario_title ?? 'Breaking Story',
       event: round?.event_development ?? game.event,
       sentiments: game.sentiments,
@@ -213,10 +192,10 @@ export const getPlayerRoundState = query({
     v.null(),
     v.object({
       gameId: v.string(),
-      phase: gamePhaseValidator,
+      phase: gamePhase,
       roundNumber: v.optional(v.number()),
       event: v.string(),
-      sentiments: sentimentsValidator,
+      sentiments: sentiments,
       submittingDeadlineMs: v.optional(v.number()),
       player: v.object({
         id: v.string(),
@@ -230,12 +209,12 @@ export const getPlayerRoundState = query({
         }),
       }),
       factionCredits: v.number(),
-      factionPlayers: v.array(factionPlayerValidator),
+      factionPlayers: v.array(factionPlayer),
       goal: v.optional(v.string()),
       briefing: v.optional(v.string()),
       factionSubmitted: v.boolean(),
-      sharedActions: v.array(actionOptionValidator),
-      factionActions: v.array(actionOptionValidator),
+      sharedActions: v.array(actionOption),
+      factionActions: v.array(actionOption),
       submittedAction: v.optional(
         v.object({
           id: v.id('submitted_actions'),
@@ -290,7 +269,7 @@ export const getPlayerRoundState = query({
 
     return {
       gameId: game.public_id,
-      phase: toGamePhase(game.phase),
+      phase: game.phase,
       roundNumber: round?.number,
       event: round?.event_development ?? game.event,
       sentiments: game.sentiments,
@@ -357,7 +336,7 @@ export const submitFactionAction = mutation({
   },
   returns: v.object({
     status: v.union(v.literal('submitted'), v.literal('locked')),
-    phase: gamePhaseValidator,
+    phase: gamePhase,
     factionSubmitted: v.boolean(),
     submissionId: v.id('submitted_actions'),
     actionTypeId: v.string(),
@@ -369,6 +348,8 @@ export const submitFactionAction = mutation({
       throw new ConvexError('Game not found')
     }
 
+    const phase = game.phase
+
     const player = await ctx.db
       .query('players')
       .withIndex('by_public_id', (q) => q.eq('public_id', args.playerId))
@@ -378,7 +359,7 @@ export const submitFactionAction = mutation({
       throw new ConvexError('Player not found')
     }
 
-    if (game.phase !== 'submitting') {
+    if (phase !== GamePhase.RoundVoting) {
       throw new ConvexError('This round is not accepting submissions')
     }
 
@@ -417,7 +398,7 @@ export const submitFactionAction = mutation({
 
       return {
         status: 'locked' as const,
-        phase: toGamePhase(game.phase),
+        phase,
         factionSubmitted: true,
         submissionId: existingSubmission._id,
         actionTypeId: existingSubmission.action_type_id,
@@ -466,15 +447,15 @@ export const submitFactionAction = mutation({
 
     if (areAllParticipatingFactionsSubmitted(nextFactionSubmitted)) {
       await ctx.db.patch(game._id, {
-        phase: 'resolving',
+        phase: GamePhase.RoundProcessing,
       })
     }
 
     return {
       status: 'submitted' as const,
       phase: areAllParticipatingFactionsSubmitted(nextFactionSubmitted)
-        ? ('resolving' as const)
-        : toGamePhase(game.phase),
+        ? GamePhase.RoundProcessing
+        : phase,
       factionSubmitted: true,
       submissionId,
       actionTypeId: actionType.id,
@@ -488,7 +469,7 @@ export const advanceSubmittingToResolving = mutation({
     reason: v.optional(v.string()),
   },
   returns: v.object({
-    phase: gamePhaseValidator,
+    phase: gamePhase,
     insertedAbstains: v.number(),
   }),
   handler: async (ctx, args) => {
@@ -498,9 +479,11 @@ export const advanceSubmittingToResolving = mutation({
       throw new ConvexError('Game not found')
     }
 
-    if (game.phase !== 'submitting') {
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundVoting) {
       return {
-        phase: toGamePhase(game.phase),
+        phase,
         insertedAbstains: 0,
       }
     }
@@ -557,11 +540,11 @@ export const advanceSubmittingToResolving = mutation({
     }
 
     await ctx.db.patch(game._id, {
-      phase: 'resolving',
+      phase: GamePhase.RoundProcessing,
     })
 
     return {
-      phase: 'resolving' as const,
+      phase: GamePhase.RoundProcessing,
       insertedAbstains,
     }
   },
@@ -574,125 +557,96 @@ export const generatePlanningBriefings = action({
   returns: v.object({
     status: v.union(v.literal('generated'), v.literal('noop'), v.literal('in_progress')),
     generatedCount: v.number(),
-    fallbackCount: v.number(),
   }),
   handler: async (ctx, args) => {
     const begin = await ctx.runMutation(internal.gameplay.beginPlanningGeneration, {
       gameId: args.gameId,
     })
 
-    if (begin.status === 'generating') {
-      return {
-        status: 'in_progress' as const,
-        generatedCount: 0,
-        fallbackCount: 0,
-      }
-    }
-
     if (begin.status === 'ready' || begin.status === 'noop') {
       return {
         status: 'noop' as const,
         generatedCount: 0,
-        fallbackCount: 0,
       }
     }
 
     const openRouterApiKey = getEnvironmentVariable('OPENROUTER_API_KEY')
+    if (!openRouterApiKey) {
+      throw new ConvexError('OPENROUTER_API_KEY is required for briefing generation')
+    }
+
     const openRouterModel =
       getEnvironmentVariable('OPENROUTER_MODEL') || DEFAULT_OPENROUTER_MODEL
-
     const liquid = new Liquid()
-    const openRouter = openRouterApiKey ? new OpenRouter({ apiKey: openRouterApiKey }) : null
-
+    const openRouter = new OpenRouter({ apiKey: openRouterApiKey })
     const briefs: Record<Id<'factions'>, { goal: string; briefing: string }> = {}
-    let fallbackCount = 0
 
     for (const faction of begin.factions) {
-      const fallback = buildFallbackBrief({
-        factionName: faction.name,
-        factionDescription: faction.description,
-        factionArchetype: faction.archetype,
+      const sentimentsText = formatSentiments(begin.sentiments)
+      const prompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF, {
+        scenario_title: begin.scenarioTitle,
         event: begin.event,
-        scoringSummary: summarizeScoring(faction.scoring),
+        round_number: begin.roundNumber,
+        max_rounds: begin.maxRounds,
+        sentiments: sentimentsText,
+        faction_name: faction.name,
+        faction_description: faction.description,
+        faction_archetype: faction.archetype,
+        faction_scoring: summarizeScoring(faction.scoring),
+        team_size: faction.teamSize,
       })
 
-      if (!openRouter) {
-        briefs[faction.id] = fallback
-        fallbackCount += 1
-        continue
-      }
-
-      const sentimentsText = formatSentiments(begin.sentiments)
-
-      try {
-        const prompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF, {
-          scenario_title: begin.scenarioTitle,
-          event: begin.event,
-          round_number: begin.roundNumber,
-          max_rounds: begin.maxRounds,
-          sentiments: sentimentsText,
-          faction_name: faction.name,
-          faction_description: faction.description,
-          faction_archetype: faction.archetype,
-          faction_scoring: summarizeScoring(faction.scoring),
-          team_size: faction.teamSize,
-        })
-
-        const aiBrief = await retry(async () => {
-          const response = await openRouter.chat.send({
-            chatGenerationParams: {
-              model: openRouterModel,
-              stream: false,
-              temperature: 0.6,
-              messages: [
-                {
-                  role: 'system',
-                  content:
-                    'You generate faction strategy copy for a game. Always return strict JSON matching the schema.',
-                },
-                {
-                  role: 'user',
-                  content: prompt,
-                },
-              ],
-              responseFormat: {
-                type: 'json_schema',
-                jsonSchema: {
-                  name: 'faction_brief',
-                  strict: true,
-                  schema: {
-                    type: 'object',
-                    additionalProperties: false,
-                    required: ['goal', 'briefing'],
-                    properties: {
-                      goal: { type: 'string' },
-                      briefing: { type: 'string' },
-                    },
+      const aiBrief = await retry(async () => {
+        const response = await openRouter.chat.send({
+          chatGenerationParams: {
+            model: openRouterModel,
+            stream: false,
+            temperature: 0.6,
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You generate faction strategy copy for a game. Always return strict JSON matching the schema.',
+              },
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            responseFormat: {
+              type: 'json_schema',
+              jsonSchema: {
+                name: 'faction_brief',
+                strict: true,
+                schema: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['goal', 'briefing'],
+                  properties: {
+                    goal: { type: 'string' },
+                    briefing: { type: 'string' },
                   },
                 },
               },
             },
-          })
-
-          const parsed = parseFactionBrief(extractAssistantText(response))
-
-          if (!parsed) {
-            throw new Error('Model did not return a valid faction brief payload')
-          }
-
-          return parsed
-        }, {
-          maxAttempts: 3,
-          delay: 500,
-          factor: 2,
-          maxDelay: 2_500,
+          },
         })
 
-        briefs[faction.id] = normalizeBrief(aiBrief, fallback)
-      } catch {
-        briefs[faction.id] = fallback
-        fallbackCount += 1
-      }
+        const parsed = parseFactionBrief(extractAssistantText(response))
+
+        if (!parsed) {
+          throw new Error('Model did not return a valid faction brief payload')
+        }
+
+        return parsed
+      }, {
+        maxAttempts: 3,
+        delay: 500,
+        factor: 2,
+        maxDelay: 2_500,
+      })
+
+      briefs[faction.id] = normalizeBrief(aiBrief)
     }
 
     const result = await ctx.runMutation(
@@ -707,14 +661,12 @@ export const generatePlanningBriefings = action({
       return {
         status: 'noop' as const,
         generatedCount: 0,
-        fallbackCount: 0,
       }
     }
 
     return {
       status: 'generated' as const,
       generatedCount: Object.keys(briefs).length,
-      fallbackCount,
     }
   },
 })
@@ -724,13 +676,13 @@ export const beginPlanningGeneration = internalMutation({
     gameId: v.string(),
   },
   returns: v.object({
-    status: planningGenerationStatusValidator,
-    phase: v.optional(gamePhaseValidator),
+    status: planningGenerationStatus,
+    phase: v.optional(gamePhase),
     roundNumber: v.optional(v.number()),
     maxRounds: v.optional(v.number()),
     scenarioTitle: v.optional(v.string()),
     event: v.optional(v.string()),
-    sentiments: v.optional(sentimentsValidator),
+    sentiments: v.optional(sentiments),
     factions: v.optional(
       v.array(
         v.object({
@@ -738,7 +690,7 @@ export const beginPlanningGeneration = internalMutation({
           name: v.string(),
           description: v.string(),
           archetype: v.string(),
-          scoring: scoringValidator,
+          scoring: scoring,
           teamSize: v.number(),
         }),
       ),
@@ -751,39 +703,50 @@ export const beginPlanningGeneration = internalMutation({
       throw new ConvexError('Game not found')
     }
 
-    if (game.phase !== 'planning') {
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundLoading) {
       return {
         status: 'noop' as const,
-        phase: toGamePhase(game.phase),
+        phase,
       }
     }
 
     const round = await getCurrentRound(ctx, game)
 
     if (!round) {
-      throw new ConvexError('Current round not found for planning')
-    }
-
-    if (round.planning_status === 'ready') {
-      return {
-        status: 'ready' as const,
-        phase: toGamePhase(game.phase),
-        roundNumber: round.number,
-      }
-    }
-
-    if (round.planning_status === 'generating') {
-      return {
-        status: 'generating' as const,
-        phase: toGamePhase(game.phase),
-        roundNumber: round.number,
-      }
+      throw new ConvexError('Current round not found for round loading')
     }
 
     const participatingFactionIds = getParticipatingFactionIds(round)
 
     if (participatingFactionIds.length === 0) {
       throw new ConvexError('No participating factions are available for briefing generation')
+    }
+
+    const allBriefsReady = participatingFactionIds.every((factionId) =>
+      hasBriefingForFaction(round, factionId),
+    )
+
+    if (allBriefsReady) {
+      const now = Date.now()
+      const submittingDeadlineMs = round.submitting_deadline_ms ?? now + SUBMITTING_DURATION_MS
+
+      await ctx.db.patch(round._id, {
+        planning_generated_at_ms: round.planning_generated_at_ms ?? now,
+        submitting_started_at_ms: round.submitting_started_at_ms ?? now,
+        submitting_deadline_ms: submittingDeadlineMs,
+      })
+
+      await ctx.db.patch(game._id, {
+        phase: GamePhase.RoundVoting,
+      })
+
+      return {
+        status: 'ready' as const,
+        phase: GamePhase.RoundVoting,
+        roundNumber: round.number,
+      }
     }
 
     const [factions, players] = await Promise.all([
@@ -799,8 +762,11 @@ export const beginPlanningGeneration = internalMutation({
 
     const playerCounts = countPlayersByFaction(players)
     const factionsById = new Map(factions.map((faction) => [faction._id, faction]))
+    const missingFactionIds = participatingFactionIds.filter(
+      (factionId) => !hasBriefingForFaction(round, factionId),
+    )
 
-    const participatingFactions = participatingFactionIds
+    const participatingFactions = missingFactionIds
       .map((factionId) => factionsById.get(factionId))
       .filter((faction): faction is Doc<'factions'> => Boolean(faction))
       .map((faction) => ({
@@ -816,13 +782,9 @@ export const beginPlanningGeneration = internalMutation({
       throw new ConvexError('No faction records found for participating teams')
     }
 
-    await ctx.db.patch(round._id, {
-      planning_status: 'generating',
-    })
-
     return {
       status: 'started' as const,
-      phase: toGamePhase(game.phase),
+      phase,
       roundNumber: round.number,
       maxRounds: game.max_rounds,
       scenarioTitle: game.scenario_title ?? 'Breaking Story',
@@ -836,11 +798,11 @@ export const beginPlanningGeneration = internalMutation({
 export const completePlanningGenerationAndEnterSubmitting = internalMutation({
   args: {
     gameId: v.string(),
-    briefs: v.record(v.id('factions'), briefValidator),
+    briefs: v.record(v.id('factions'), brief),
   },
   returns: v.object({
     status: v.union(v.literal('completed'), v.literal('ready'), v.literal('noop')),
-    phase: gamePhaseValidator,
+    phase: gamePhase,
     submittingDeadlineMs: v.optional(v.number()),
   }),
   handler: async (ctx, args) => {
@@ -850,10 +812,12 @@ export const completePlanningGenerationAndEnterSubmitting = internalMutation({
       throw new ConvexError('Game not found')
     }
 
-    if (game.phase !== 'planning') {
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundLoading) {
       return {
         status: 'noop' as const,
-        phase: toGamePhase(game.phase),
+        phase,
       }
     }
 
@@ -863,72 +827,60 @@ export const completePlanningGenerationAndEnterSubmitting = internalMutation({
       throw new ConvexError('Current round not found')
     }
 
-    if (round.planning_status === 'ready') {
-      await ctx.db.patch(game._id, {
-        phase: 'submitting',
-      })
-
-      return {
-        status: 'ready' as const,
-        phase: 'submitting' as const,
-        submittingDeadlineMs: round.submitting_deadline_ms,
-      }
-    }
-
     const factionIds = getParticipatingFactionIds(round)
 
     if (factionIds.length === 0) {
       throw new ConvexError('Cannot enter submitting with no participating factions')
     }
 
-    const factions = await ctx.db
-      .query('factions')
-      .withIndex('by_game', (q) => q.eq('game_id', game._id))
-      .collect()
-
-    const factionById = new Map(factions.map((faction) => [faction._id, faction]))
-
     const finalizedBriefs: Partial<Record<Id<'factions'>, { goal: string; briefing: string }>> = {
       ...round.faction_briefs,
     }
 
     for (const factionId of factionIds) {
-      const faction = factionById.get(factionId)
-
-      if (!faction) {
+      if (hasBriefingValue(finalizedBriefs[factionId])) {
         continue
       }
 
-      const fallback = buildFallbackBrief({
-        factionName: faction.name,
-        factionDescription: faction.description,
-        factionArchetype: faction.archetype,
-        event: round.event_development,
-        scoringSummary: summarizeScoring(faction.scoring),
-      })
+      const generatedBrief = args.briefs[factionId]
 
-      finalizedBriefs[factionId] = normalizeBrief(args.briefs[factionId], fallback)
+      if (!generatedBrief) {
+        throw new ConvexError('Missing briefing payload for a participating faction')
+      }
+
+      finalizedBriefs[factionId] = normalizeBrief(generatedBrief)
+    }
+
+    const allBriefsReady = factionIds.every((factionId) =>
+      hasBriefingValue(finalizedBriefs[factionId]),
+    )
+
+    if (!allBriefsReady) {
+      return {
+        status: 'noop' as const,
+        phase,
+        submittingDeadlineMs: round.submitting_deadline_ms,
+      }
     }
 
     const now = Date.now()
-    const submittingDeadlineMs = now + SUBMITTING_DURATION_MS
+    const submittingDeadlineMs = round.submitting_deadline_ms ?? now + SUBMITTING_DURATION_MS
 
     await ctx.db.patch(round._id, {
       faction_briefs:
         finalizedBriefs as Record<Id<'factions'>, { goal: string; briefing: string }>,
-      planning_status: 'ready',
-      planning_generated_at_ms: now,
-      submitting_started_at_ms: now,
+      planning_generated_at_ms: round.planning_generated_at_ms ?? now,
+      submitting_started_at_ms: round.submitting_started_at_ms ?? now,
       submitting_deadline_ms: submittingDeadlineMs,
     })
 
     await ctx.db.patch(game._id, {
-      phase: 'submitting',
+      phase: GamePhase.RoundVoting,
     })
 
     return {
       status: 'completed' as const,
-      phase: 'submitting' as const,
+      phase: GamePhase.RoundVoting,
       submittingDeadlineMs,
     }
   },
@@ -980,6 +932,23 @@ function getParticipatingFactionIds(round: Doc<'rounds'> | null): Array<Id<'fact
   return Object.keys(round.faction_submitted) as Array<Id<'factions'>>
 }
 
+function hasBriefingForFaction(
+  round: Doc<'rounds'>,
+  factionId: Id<'factions'>,
+): boolean {
+  return hasBriefingValue(round.faction_briefs[factionId])
+}
+
+function hasBriefingValue(
+  brief: { goal: string; briefing: string } | undefined,
+): boolean {
+  if (!brief) {
+    return false
+  }
+
+  return brief.goal.trim().length > 0 && brief.briefing.trim().length > 0
+}
+
 function countPlayersByFaction(
   players: Array<Doc<'players'>>,
 ): Map<Id<'factions'>, number> {
@@ -1000,18 +969,13 @@ function areAllParticipatingFactionsSubmitted(
 }
 
 function normalizeBrief(
-  brief: { goal: string; briefing: string } | undefined,
-  fallback: { goal: string; briefing: string },
+  brief: { goal: string; briefing: string },
 ): { goal: string; briefing: string } {
-  if (!brief) {
-    return fallback
-  }
-
   const goal = brief.goal.trim()
   const briefing = brief.briefing.trim()
 
   if (!goal || !briefing) {
-    return fallback
+    throw new ConvexError('Briefings must include a goal and briefing')
   }
 
   return {
@@ -1094,25 +1058,6 @@ function extractAssistantText(response: unknown): string {
   return textParts.join('\n').trim()
 }
 
-function buildFallbackBrief({
-  factionName,
-  factionDescription,
-  factionArchetype,
-  event,
-  scoringSummary,
-}: {
-  factionName: string
-  factionDescription: string
-  factionArchetype: string
-  event: string
-  scoringSummary: string
-}): { goal: string; briefing: string } {
-  return {
-    goal: `Push coverage so ${factionName} gains leverage from this moment and steers sentiment toward your best scoring lanes.`,
-    briefing: `${factionName} needs to move quickly while the story is still forming. ${factionDescription} Treat the current event as your chance to frame what people think matters most: ${event} Your internal style is ${factionArchetype}. Prioritize actions that reinforce this tone and nudge the public toward these incentives: ${scoringSummary}.`,
-  }
-}
-
 function summarizeScoring(scoring: {
   stability: Array<number>
   attention: Array<number>
@@ -1159,12 +1104,6 @@ function formatSentiments(sentiments: {
     `- Corporate Blame: ${Math.round(sentiments.corporate_blame)}`,
     `- Government Blame: ${Math.round(sentiments.government_blame)}`,
   ].join('\n')
-}
-
-function toGamePhase(phase: string): GamePhase {
-  return (GAME_PHASES as ReadonlyArray<string>).includes(phase)
-    ? (phase as GamePhase)
-    : 'lobby'
 }
 
 function getEnvironmentVariable(name: string): string | undefined {

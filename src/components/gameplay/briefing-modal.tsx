@@ -1,4 +1,11 @@
-import { Button, Card } from '@heroui/react'
+import { Button } from '~/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '~/components/ui/dialog'
 
 export function BriefingModal({
   isOpen,
@@ -13,28 +20,43 @@ export function BriefingModal({
   goal: string
   briefing: string
 }) {
-  if (!isOpen) {
-    return null
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <Card className="max-h-[90vh] w-full max-w-2xl border border-zinc-700/80 bg-zinc-950">
-        <Card.Header className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <Card.Title className="text-xl">{factionName} Briefing</Card.Title>
-            <Card.Description className="text-zinc-300">Mission Goal: {goal}</Card.Description>
-          </div>
-          <Button onPress={onClose} size="sm" variant="ghost">
-            Close
-          </Button>
-        </Card.Header>
-        <Card.Content className="space-y-4 overflow-y-auto pb-6">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-100 sm:text-base">
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose()
+        }
+      }}
+      open={isOpen}
+    >
+      <DialogContent
+        className="max-h-[92vh] overflow-hidden rounded-2xl border-2 border-black bg-[var(--card)] p-0 sm:max-w-2xl"
+        showCloseButton={false}
+      >
+        <div className="neo-grid max-h-[92vh] overflow-y-auto p-6">
+          <DialogHeader className="gap-3 text-left">
+            <DialogTitle className="font-display text-3xl text-black">{factionName} Brief</DialogTitle>
+            <DialogDescription className="rounded-xl border-2 border-black bg-white p-3 text-sm text-black/80">
+              <span className="neo-label mr-2 text-black/60">Goal</span>
+              {goal}
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-black sm:text-base">
             {briefing}
           </p>
-        </Card.Content>
-      </Card>
-    </div>
+
+          <div className="mt-6 flex justify-end">
+            <Button
+              className="h-10 border-2 border-black px-4 font-heading text-xs uppercase tracking-[0.08em]"
+              onClick={onClose}
+              type="button"
+            >
+              Back to Team
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

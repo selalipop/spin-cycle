@@ -1,6 +1,7 @@
 import { ConvexError, v } from 'convex/values'
 import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
 import type { Doc, Id } from './_generated/dataModel'
+import { GamePhase, gamePhase } from './game_phase'
 import { SHARED_ACTIONS, FACTIONS, SCENARIOS } from './game_data'
 
 const DEFAULT_EVENT =
@@ -17,30 +18,21 @@ const INITIAL_SENTIMENTS = {
 const JOIN_CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
 const JOIN_CODE_LENGTH = 5
 const MAX_PLAYER_NAME_LENGTH = 24
+const AVATAR_PATH_PATTERN = /^\/avatars\/avatar_(?:[1-9]|1[0-3])\.png$/
 
-const playerSummaryValidator = v.object({
+const playerSummary = v.object({
   id: v.string(),
   name: v.string(),
   avatar: v.string(),
 })
 
-const factionSummaryValidator = v.object({
+const factionSummary = v.object({
   id: v.id('factions'),
   code: v.string(),
   name: v.string(),
   description: v.string(),
   playerCount: v.number(),
 })
-
-const gamePhaseValidator = v.union(
-  v.literal('lobby'),
-  v.literal('establishing'),
-  v.literal('planning'),
-  v.literal('submitting'),
-  v.literal('resolving'),
-  v.literal('results'),
-  v.literal('game_over'),
-)
 
 export const createGame = mutation({
   args: {},
@@ -61,7 +53,7 @@ export const createGame = mutation({
       intro_video: scenario.intro_video,
       event: scenario.event,
       max_rounds: 4,
-      phase: 'lobby',
+      phase: GamePhase.GameLobby,
       sentiments: INITIAL_SENTIMENTS,
       round_summaries: [],
       shared_actions: SHARED_ACTIONS,
@@ -115,7 +107,7 @@ export const joinGame = mutation({
       throw new ConvexError('Game code not found')
     }
 
-    if (game.phase !== 'lobby') {
+    if (game.phase !== GamePhase.GameLobby) {
       throw new ConvexError('This game has already started')
     }
 
@@ -172,8 +164,8 @@ export const getGameByJoinCode = query({
     v.object({
       gameId: v.string(),
       joinCode: v.string(),
-      phase: gamePhaseValidator,
-      factions: v.array(factionSummaryValidator),
+      phase: gamePhase,
+      factions: v.array(factionSummary),
     }),
   ),
   handler: async (ctx, args) => {
@@ -228,7 +220,7 @@ export const getGameLobby = query({
     v.object({
       gameId: v.string(),
       joinCode: v.string(),
-      phase: gamePhaseValidator,
+      phase: gamePhase,
       scenarioTitle: v.string(),
       introVideo: v.string(),
       event: v.string(),
@@ -240,7 +232,7 @@ export const getGameLobby = query({
           name: v.string(),
           description: v.string(),
           playerCount: v.number(),
-          players: v.array(playerSummaryValidator),
+          players: v.array(playerSummary),
         }),
       ),
     }),
@@ -315,7 +307,7 @@ export const getPlayerState = query({
     v.null(),
     v.object({
       gameId: v.string(),
-      phase: gamePhaseValidator,
+      phase: gamePhase,
       player: v.object({
         id: v.string(),
         name: v.string(),
@@ -327,7 +319,7 @@ export const getPlayerState = query({
           description: v.string(),
         }),
       }),
-      factionPlayers: v.array(playerSummaryValidator),
+      factionPlayers: v.array(playerSummary),
     }),
   ),
   handler: async (ctx, args) => {
@@ -390,7 +382,7 @@ export const startGame = mutation({
   },
   returns: v.object({
     gameId: v.string(),
-    phase: v.literal('establishing'),
+    phase: v.literal(GamePhase.GameIntroduction),
   }),
   handler: async (ctx, args) => {
     const game = await findGameByPublicId(ctx, args.gameId)
@@ -399,17 +391,17 @@ export const startGame = mutation({
       throw new ConvexError('Game not found')
     }
 
-    if (game.phase !== 'lobby') {
+    if (game.phase !== GamePhase.GameLobby) {
       throw new ConvexError('Game has already started')
     }
 
     await ctx.db.patch(game._id, {
-      phase: "establishing" as const,
+      phase: GamePhase.GameIntroduction,
     })
 
     return {
       gameId: game.public_id,
-      phase: "establishing" as const,
+      phase: GamePhase.GameIntroduction as GamePhase.GameIntroduction,
     }
   },
 })
@@ -420,7 +412,7 @@ export const startRoundOne = mutation({
   },
   returns: v.object({
     gameId: v.string(),
-    phase: v.literal('planning'),
+    phase: v.literal(GamePhase.RoundLoading),
     roundNumber: v.literal(1),
   }),
   handler: async (ctx, args) => {
@@ -430,7 +422,7 @@ export const startRoundOne = mutation({
       throw new ConvexError('Game not found')
     }
 
-    if (game.phase !== 'establishing') {
+    if (game.phase !== GamePhase.GameIntroduction) {
       throw new ConvexError('Game is not ready to start round one')
     }
 
@@ -465,17 +457,16 @@ export const startRoundOne = mutation({
       sentiment_before: game.sentiments,
       faction_briefs: {},
       faction_submitted: buildInitialFactionSubmitted(participatingFactionIds),
-      planning_status: 'pending',
     })
 
     await ctx.db.patch(game._id, {
-      phase: "planning" as const,
+      phase: GamePhase.RoundLoading,
       current_round: 1,
     })
 
     return {
       gameId: game.public_id,
-      phase: "planning" as const,
+      phase: GamePhase.RoundLoading as GamePhase.RoundLoading,
       roundNumber: 1 as const,
     }
   },
@@ -557,7 +548,11 @@ function normalizePlayerName(value: string): string {
 function normalizeAvatar(value: string): string {
   const trimmed = value.trim()
 
-  return trimmed ? trimmed.slice(0, 2) : '🗞️'
+  if (!AVATAR_PATH_PATTERN.test(trimmed)) {
+    throw new ConvexError('Invalid avatar selection')
+  }
+
+  return trimmed
 }
 
 function createPublicId(): string {

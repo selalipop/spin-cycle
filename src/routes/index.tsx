@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Button, Card, Chip, Input } from '@heroui/react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation } from 'convex/react'
 import { api } from '../../convex/_generated/api'
+import { Badge } from '~/components/ui/badge'
+import { Button } from '~/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { Input } from '~/components/ui/input'
 import { PageShell } from '~/components/lobby/page-shell'
 
 export const Route = createFileRoute('/')({
@@ -27,14 +30,14 @@ function Home() {
       const game = await createGame({})
       window.location.assign(`/game/${game.gameId}/host`)
     } catch {
-      setError('Could not create game right now. Please try again.')
+      setError('Could not start a new room. Please try again.')
       setIsCreating(false)
     }
   }
 
   const handleJoin = () => {
     if (!normalizedJoinCode) {
-      setError('Enter a game code to join.')
+      setError('Enter a room code first.')
       return
     }
 
@@ -45,53 +48,74 @@ function Home() {
 
   return (
     <PageShell
-      eyebrow="Newsroom"
-      subtitle="Four factions. One breaking story. Total narrative warfare."
-      title="Run the room, bend the headlines"
+      eyebrow="Spin Cycle"
+      subtitle="A Jackbox-style party game where teams race to shape the story together."
+      title="Run the room. Bend the narrative."
     >
       <section className="grid gap-4 lg:grid-cols-2">
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Header>
-            <Card.Title>Host a Game</Card.Title>
-            <Card.Description>Create a new lobby and bring teams in.</Card.Description>
-          </Card.Header>
-          <Card.Content className="space-y-4">
-            <p className="text-sm text-zinc-300">
-              Start a fresh match with all 4 factions, default actions, and neutral sentiment.
+        <Card className="neo-panel neo-grid neo-tilt-left gap-4 py-4">
+          <CardHeader className="gap-3 pb-0">
+            <Badge className="w-fit rounded-full border border-black bg-rose-300 px-3 py-1 text-[0.66rem] uppercase text-black">
+              Host Screen
+            </Badge>
+            <CardTitle className="font-display text-3xl text-black">Start a Game</CardTitle>
+            <CardDescription className="text-black/75">
+              Create a fresh room and bring everyone in.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pb-2">
+            <p className="text-sm text-black/75">
+              You control the timer, the opening scene, and when each round begins.
             </p>
-            <Button className="w-full" isDisabled={isCreating || isJoining} onPress={handleCreate}>
-              {isCreating ? 'Creating...' : 'Create Game'}
+            <Button
+              className="h-12 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              disabled={isCreating || isJoining}
+              onClick={handleCreate}
+              type="button"
+            >
+              {isCreating ? 'Creating Room...' : 'Create Host Room'}
             </Button>
-          </Card.Content>
+          </CardContent>
         </Card>
 
-        <Card className="border border-zinc-700/70 bg-zinc-900/70">
-          <Card.Header>
-            <Card.Title>Join a Game</Card.Title>
-            <Card.Description>Enter the short host code.</Card.Description>
-          </Card.Header>
-          <Card.Content className="space-y-4">
+        <Card className="neo-panel neo-grid neo-tilt-right gap-4 py-4">
+          <CardHeader className="gap-3 pb-0">
+            <Badge className="w-fit rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.66rem] uppercase text-black">
+              Phone Players
+            </Badge>
+            <CardTitle className="font-display text-3xl text-black">Join a Game</CardTitle>
+            <CardDescription className="text-black/75">
+              Enter the short code from the host screen.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 pb-2">
             <Input
               aria-label="Join code"
-              className="uppercase"
-              maxLength={6}
+              className="neo-code h-12 border-2 border-black bg-white px-4 text-center text-black placeholder:text-black/40"
+              maxLength={5}
               onChange={(event) => {
                 setJoinCode(event.currentTarget.value.toUpperCase())
               }}
-              placeholder="ABCD"
+              placeholder="ABCDE"
               value={joinCode}
             />
-            <Button className="w-full" isDisabled={!normalizedJoinCode || isCreating || isJoining} onPress={handleJoin}>
-              Join Game
+            <Button
+              className="h-12 w-full border-2 border-black font-heading text-xs uppercase tracking-[0.08em]"
+              disabled={!normalizedJoinCode || isCreating || isJoining}
+              onClick={handleJoin}
+              type="button"
+              variant="secondary"
+            >
+              {isJoining ? 'Joining...' : 'Enter Game'}
             </Button>
-          </Card.Content>
+          </CardContent>
         </Card>
       </section>
 
       {error ? (
-        <Chip className="w-fit bg-rose-600/25 text-rose-200">
+        <Badge className="w-fit rounded-full border border-black bg-destructive px-3 py-1 text-[0.7rem] text-destructive-foreground">
           {error}
-        </Chip>
+        </Badge>
       ) : null}
     </PageShell>
   )

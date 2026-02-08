@@ -1,4 +1,6 @@
-import { Avatar, Card, Chip } from '@heroui/react'
+import { Avatar, AvatarFallback, AvatarImage } from '~/components/ui/avatar'
+import { Badge } from '~/components/ui/badge'
+import { Card, CardContent } from '~/components/ui/card'
 
 export function PlayerListItem({
   name,
@@ -10,20 +12,22 @@ export function PlayerListItem({
   isCurrent?: boolean
 }) {
   return (
-    <Card className="border border-zinc-700/70 bg-zinc-900/70">
-      <Card.Content className="flex items-center justify-between gap-3 py-3">
+    <Card className="neo-panel gap-0 py-0">
+      <CardContent className="flex items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
-          <Avatar size="sm">
-            <Avatar.Fallback>{avatar}</Avatar.Fallback>
+          <Avatar className="size-11 border-2 border-black bg-muted" size="lg">
+            <AvatarImage alt={`${name} avatar`} className="object-cover" src={avatar} />
+            <AvatarFallback className="font-mono text-xs">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
-          <span className="font-medium text-zinc-100">{name}</span>
+          <span className="font-semibold text-black">{name}</span>
         </div>
+
         {isCurrent ? (
-          <Chip className="bg-white/20 text-zinc-100" size="sm">
+          <Badge className="rounded-full border border-black bg-secondary px-2 py-1 text-[0.65rem] uppercase text-secondary-foreground">
             You
-          </Chip>
+          </Badge>
         ) : null}
-      </Card.Content>
+      </CardContent>
     </Card>
   )
 }

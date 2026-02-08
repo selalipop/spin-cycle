@@ -1,4 +1,6 @@
-import { Button, Card, Chip } from '@heroui/react'
+import { Badge } from '~/components/ui/badge'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
+import { cn } from '~/lib/utils'
 
 export type ActionOption = {
   id: string
@@ -20,31 +22,44 @@ function ActionRow({
   onSelect: (action: ActionOption) => void
 }) {
   const isDisabled = disabled || !action.affordable
+  const statusLabel = disabled
+    ? 'Your team already locked a move this round.'
+    : !action.affordable
+      ? 'Not enough credits for this move.'
+      : action.isSpecial
+        ? 'Special move'
+        : 'Ready'
 
   return (
-    <Button
-      className="h-auto justify-start border border-zinc-700/80 bg-zinc-900/70 p-3 text-left"
-      isDisabled={isDisabled}
-      onPress={() => onSelect(action)}
-      variant="ghost"
+    <button
+      className={cn(
+        'neo-pressable neo-panel-soft flex w-full items-start justify-between gap-4 p-4 text-left',
+        isDisabled ? 'cursor-not-allowed opacity-65' : 'hover:bg-amber-100',
+      )}
+      disabled={isDisabled}
+      onClick={() => onSelect(action)}
+      type="button"
     >
-      <div className="flex w-full items-start justify-between gap-3">
-        <div className="space-y-1">
-          <p className={`text-sm font-semibold ${isDisabled ? 'text-zinc-500' : 'text-zinc-100'}`}>
-            {action.name}
-          </p>
-          <p className={`text-xs ${isDisabled ? 'text-zinc-600' : 'text-zinc-300'}`}>
-            {action.prompt}
-          </p>
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-heading text-sm leading-tight text-black sm:text-base">{action.name}</p>
+          <Badge className="rounded-full border border-black bg-white px-2 py-0.5 text-[0.62rem] uppercase text-black">
+            {action.isShared ? 'Shared' : 'Faction'}
+          </Badge>
         </div>
-        <Chip
-          className={isDisabled ? 'bg-zinc-800 text-zinc-500' : 'bg-zinc-700 text-zinc-100'}
-          size="sm"
-        >
-          {action.cost}c
-        </Chip>
+        <p className="text-sm text-black/75">{action.prompt}</p>
+        <p className="font-mono text-[0.68rem] uppercase tracking-[0.08em] text-black/60">{statusLabel}</p>
       </div>
-    </Button>
+
+      <Badge
+        className={cn(
+          'shrink-0 rounded-full border border-black px-2 py-1 text-[0.66rem] uppercase',
+          isDisabled ? 'bg-black/10 text-black/60' : 'bg-primary text-primary-foreground',
+        )}
+      >
+        {action.cost} credits
+      </Badge>
+    </button>
   )
 }
 
@@ -60,30 +75,31 @@ export function ActionMenu({
   locked: boolean
 }) {
   return (
-    <Card className="border border-zinc-700/70 bg-zinc-950/70">
-      <Card.Header>
-        <Card.Title>Choose an Action</Card.Title>
-        <Card.Description>
-          Shared options first, then your faction exclusives.
-        </Card.Description>
-      </Card.Header>
-      <Card.Content className="space-y-4 pb-6">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Shared Actions</p>
+    <Card className="neo-panel gap-5 py-4">
+      <CardHeader className="gap-3 pb-0">
+        <CardTitle className="font-display text-2xl text-black sm:text-3xl">Pick a Move</CardTitle>
+        <CardDescription className="text-black/75">
+          Shared moves are available to everyone. Faction moves are your team exclusives.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="space-y-5 pb-2">
+        <div className="space-y-3">
+          <p className="neo-label text-black/65">Shared Moves</p>
           {sharedActions.map((action) => (
             <ActionRow action={action} disabled={locked} key={action.id} onSelect={onSelectAction} />
           ))}
         </div>
 
-        <div className="h-px w-full bg-zinc-700/70" />
+        <div className="h-[2px] w-full bg-black/20" />
 
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.14em] text-zinc-400">Faction Actions</p>
+        <div className="space-y-3">
+          <p className="neo-label text-black/65">Faction Moves</p>
           {factionActions.map((action) => (
             <ActionRow action={action} disabled={locked} key={action.id} onSelect={onSelectAction} />
           ))}
         </div>
-      </Card.Content>
+      </CardContent>
     </Card>
   )
 }

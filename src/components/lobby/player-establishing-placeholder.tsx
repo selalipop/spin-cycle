@@ -1,4 +1,6 @@
-import { Card, Chip, Spinner } from '@heroui/react'
+import { Badge } from '~/components/ui/badge'
+import { Card, CardContent } from '~/components/ui/card'
+import { Spinner } from '~/components/ui/spinner'
 
 export function PlayerEstablishingPlaceholder({
   factionName,
@@ -6,15 +8,17 @@ export function PlayerEstablishingPlaceholder({
   factionName: string
 }) {
   return (
-    <Card className="border border-zinc-700/70 bg-zinc-900/70">
-      <Card.Content className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center">
-        <Chip className="bg-amber-500/25 text-amber-200">Establishing Premise</Chip>
-        <Spinner size="lg" />
-        <p className="text-lg font-medium text-zinc-100">Main screen content is playing</p>
-        <p className="max-w-md text-sm text-zinc-300">
-          {factionName} will join round 1 as soon as the host finishes the establishing sequence.
+    <Card className="neo-panel neo-grid py-0">
+      <CardContent className="flex min-h-[320px] flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+        <Badge className="rounded-full border border-black bg-amber-300 px-3 py-1 text-[0.68rem] uppercase text-black">
+          Opening Scene
+        </Badge>
+        <Spinner className="size-9 text-black" />
+        <p className="font-heading text-2xl text-black">Story setup is on the big screen.</p>
+        <p className="max-w-lg text-sm text-black/75">
+          {factionName} joins as soon as the opening scene wraps and round one starts.
         </p>
-      </Card.Content>
+      </CardContent>
     </Card>
   )
 }

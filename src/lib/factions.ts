@@ -6,36 +6,36 @@ export type FactionTheme = {
 }
 
 const DEFAULT_THEME: FactionTheme = {
-  borderClass: 'border-zinc-700',
-  softClass: 'bg-zinc-900/70',
-  accentTextClass: 'text-zinc-200',
-  chipClass: 'bg-zinc-700/60 text-zinc-100',
+  borderClass: 'border-black',
+  softClass: 'bg-white',
+  accentTextClass: 'text-black',
+  chipClass: 'border border-black bg-secondary text-secondary-foreground',
 }
 
 const THEMES: Record<string, FactionTheme> = {
   the_institute: {
-    borderClass: 'border-sky-500/60',
-    softClass: 'bg-sky-950/35',
-    accentTextClass: 'text-sky-300',
-    chipClass: 'bg-sky-500/25 text-sky-200',
+    borderClass: 'border-black',
+    softClass: 'bg-sky-100',
+    accentTextClass: 'text-sky-950',
+    chipClass: 'border border-black bg-sky-300 text-sky-950',
   },
   crowdswell: {
-    borderClass: 'border-amber-500/60',
-    softClass: 'bg-amber-950/35',
-    accentTextClass: 'text-amber-300',
-    chipClass: 'bg-amber-500/25 text-amber-200',
+    borderClass: 'border-black',
+    softClass: 'bg-amber-100',
+    accentTextClass: 'text-amber-950',
+    chipClass: 'border border-black bg-amber-300 text-amber-950',
   },
   pinnacle_media_group: {
-    borderClass: 'border-rose-500/60',
-    softClass: 'bg-rose-950/35',
-    accentTextClass: 'text-rose-300',
-    chipClass: 'bg-rose-500/25 text-rose-200',
+    borderClass: 'border-black',
+    softClass: 'bg-rose-100',
+    accentTextClass: 'text-rose-950',
+    chipClass: 'border border-black bg-rose-300 text-rose-950',
   },
   foundation_for_public_good: {
-    borderClass: 'border-emerald-500/60',
-    softClass: 'bg-emerald-950/35',
-    accentTextClass: 'text-emerald-300',
-    chipClass: 'bg-emerald-500/25 text-emerald-200',
+    borderClass: 'border-black',
+    softClass: 'bg-emerald-100',
+    accentTextClass: 'text-emerald-950',
+    chipClass: 'border border-black bg-emerald-300 text-emerald-950',
   },
 }
 
