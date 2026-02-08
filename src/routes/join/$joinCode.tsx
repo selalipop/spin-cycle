@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '../../../convex/_generated/api'
+import type { Id } from '../../../convex/_generated/dataModel'
 import { AvatarPicker } from '~/components/lobby/avatar-picker'
 import { FactionCard } from '~/components/lobby/faction-card'
 import { PageShell } from '~/components/lobby/page-shell'
@@ -10,12 +11,25 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { WashingMachineLoader } from '~/components/ui/washing-machine-loader'
-import { DEFAULT_AVATAR_PATH } from '~/lib/avatars'
 import { getOrCreateSessionId, getSavedPlayerId, savePlayerRoute } from '~/lib/session'
+import { cn } from '~/lib/utils'
 
 export const Route = createFileRoute('/join/$joinCode')({
   component: JoinGamePage,
 })
+
+function shuffle<T>(values: Array<T>): Array<T> {
+  const shuffled = [...values]
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    const temp = shuffled[index]
+    shuffled[index] = shuffled[swapIndex]
+    shuffled[swapIndex] = temp
+  }
+
+  return shuffled
+}
 
 function JoinGamePage() {
   const { joinCode } = Route.useParams()
@@ -25,19 +39,42 @@ function JoinGamePage() {
   const joinGame = useMutation(api.lobby.joinGame)
 
   const [playerName, setPlayerName] = useState('')
-  const [avatar, setAvatar] = useState(DEFAULT_AVATAR_PATH)
-  const [selectedFactionId, setSelectedFactionId] = useState<string | null>(null)
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const [selectedFactionId, setSelectedFactionId] = useState<Id<'factions'> | null>(null)
+  const [shuffledFactionIds, setShuffledFactionIds] = useState<Array<Id<'factions'>>>([])
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const factions = game?.factions ?? []
+  const hasName = playerName.trim().length > 0
+  const hasAvatar = avatar !== null
+  const canChooseFaction = hasName && hasAvatar && game?.phase === 'game_lobby'
+  const canJoinTeam = canChooseFaction && selectedFactionId !== null
 
   useEffect(() => {
-    if (!game?.factions.length || selectedFactionId) {
+    if (!factions.length) {
       return
     }
 
-    const sorted = [...game.factions].sort((a, b) => a.playerCount - b.playerCount)
-    setSelectedFactionId(sorted[0]?.id ?? null)
-  }, [game, selectedFactionId])
+    const factionIds = factions.map((faction) => faction.id)
+    setShuffledFactionIds((existingOrder) => {
+      if (
+        existingOrder.length === factionIds.length
+        && existingOrder.every((id) => factionIds.includes(id))
+      ) {
+        return existingOrder
+      }
+
+      return shuffle(factionIds)
+    })
+  }, [factions])
+
+  useEffect(() => {
+    if (!selectedFactionId || factions.some((faction) => faction.id === selectedFactionId)) {
+      return
+    }
+
+    setSelectedFactionId(null)
+  }, [factions, selectedFactionId])
 
   useEffect(() => {
     if (!game) {
@@ -52,6 +89,19 @@ function JoinGamePage() {
     window.location.replace(`/game/${game.gameId}/player/${savedPlayerId}`)
   }, [game])
 
+  const shuffledFactions = useMemo(() => {
+    if (!factions.length || !shuffledFactionIds.length) {
+      return factions
+    }
+
+    const factionById = new Map(factions.map((faction) => [faction.id, faction]))
+    const orderedFactions = shuffledFactionIds
+      .map((factionId) => factionById.get(factionId))
+      .filter((faction): faction is (typeof factions)[number] => faction !== undefined)
+
+    return orderedFactions.length === factions.length ? orderedFactions : factions
+  }, [factions, shuffledFactionIds])
+
   const handleJoin = async () => {
     if (!game) {
       return
@@ -62,13 +112,19 @@ function JoinGamePage() {
       return
     }
 
-    if (!selectedFactionId) {
-      setError('Pick a faction before joining.')
+    const normalizedPlayerName = playerName.trim()
+    if (!normalizedPlayerName) {
+      setError('Add your name first.')
       return
     }
 
-    if (!playerName.trim()) {
-      setError('Add your name first.')
+    if (!avatar) {
+      setError('Pick an avatar before choosing a faction.')
+      return
+    }
+
+    if (!selectedFactionId) {
+      setError('Pick a faction before joining.')
       return
     }
 
@@ -79,8 +135,8 @@ function JoinGamePage() {
       const sessionId = getOrCreateSessionId()
       const result = await joinGame({
         joinCode: normalizedJoinCode,
-        playerName,
-        factionId: selectedFactionId as any,
+        playerName: normalizedPlayerName,
+        factionId: selectedFactionId,
         avatar,
         sessionId,
       })
@@ -153,7 +209,7 @@ function JoinGamePage() {
 
             <Button
               className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.08em]"
-              disabled={isJoining || !selectedFactionId || game.phase !== 'game_lobby'}
+              disabled={isJoining || !canJoinTeam}
               onClick={handleJoin}
               type="button"
             >
@@ -174,18 +230,33 @@ function JoinGamePage() {
           </CardContent>
         </Card>
 
-        <Card className="neo-panel neo-grid gap-4 py-4">
+        <Card
+          className={cn(
+            'neo-panel neo-grid gap-4 py-4 transition-opacity',
+            canChooseFaction ? 'opacity-100' : 'opacity-55 saturate-0',
+          )}
+        >
           <CardHeader className="gap-3 pb-0">
             <CardTitle className="font-display text-3xl text-black">Choose Your Faction</CardTitle>
             <CardDescription className="text-black/90">
               Each faction has a different angle.
             </CardDescription>
+            {!hasName || !hasAvatar ? (
+              <Badge className="w-fit rounded-full border border-black bg-slate-200 px-3 py-1 text-xs text-black">
+                Add a name and avatar to unlock team selection.
+              </Badge>
+            ) : null}
           </CardHeader>
           <CardContent className="grid gap-3 pb-2 md:grid-cols-2">
-            {game.factions.map((faction) => (
+            {shuffledFactions.map((faction) => (
               <FactionCard
-                actionLabel={selectedFactionId === faction.id ? 'Ready' : 'Choose Team'}
+                actionLabel={
+                  canChooseFaction
+                    ? (selectedFactionId === faction.id ? 'Ready' : 'Choose Team')
+                    : 'Locked'
+                }
                 code={faction.code}
+                disabled={!canChooseFaction || isJoining}
                 description={faction.description}
                 key={faction.id}
                 name={faction.name}

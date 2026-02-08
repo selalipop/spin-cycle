@@ -7,7 +7,7 @@ export function AvatarPicker({
   value,
   onChange,
 }: {
-  value: string
+  value: string | null
   onChange: (avatar: string) => void
 }) {
   return (
@@ -15,12 +15,14 @@ export function AvatarPicker({
       <div className="flex items-center justify-between gap-3">
         <p className="neo-label text-black/92">Choose Your Avatar</p>
         <Badge className="rounded-full border border-black bg-white px-2 py-1 text-xs text-black">
-          <img
-            alt="Selected avatar preview"
-            className="mr-2 size-6 rounded-md border border-black object-cover"
-            src={value}
-          />
-          Selected
+          {value ? (
+            <img
+              alt="Selected avatar preview"
+              className="mr-2 size-6 rounded-md border border-black object-cover"
+              src={value}
+            />
+          ) : null}
+          {value ? 'Selected' : 'Not Selected'}
         </Badge>
       </div>
 

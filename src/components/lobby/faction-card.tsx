@@ -2,7 +2,6 @@ import { Badge } from '~/components/ui/badge'
 import { Button } from '~/components/ui/button'
 import {
   Card,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -18,6 +17,7 @@ export function FactionCard({
   selected,
   onSelect,
   actionLabel,
+  disabled,
   className,
 }: {
   code: string
@@ -27,6 +27,7 @@ export function FactionCard({
   selected?: boolean
   onSelect?: () => void
   actionLabel?: string
+  disabled?: boolean
   className?: string
 }) {
   const theme = getFactionTheme(code)
@@ -34,7 +35,7 @@ export function FactionCard({
   return (
     <Card
       className={cn(
-        'neo-panel neo-pressable gap-4 overflow-hidden py-4 min-w-0',
+        'neo-panel neo-pressable h-full min-w-0 gap-4 overflow-hidden py-4',
         theme.softClass,
         theme.borderClass,
         selected
@@ -43,24 +44,25 @@ export function FactionCard({
         className,
       )}
     >
-      <CardHeader className="gap-3 pb-0">
+      <CardHeader className={cn('gap-2 pb-0', onSelect ? 'flex-1' : null)}>
         <div className="flex items-start justify-between gap-3">
-          <CardTitle className={cn('font-heading text-lg leading-tight', theme.accentTextClass)}>
+          <CardTitle className={cn('font-heading text-lg leading-[1.08]', theme.accentTextClass)}>
             {name}
           </CardTitle>
           <Badge className={cn('rounded-full px-3 py-1 text-xs uppercase', theme.chipClass)}>
             {playerCount} on team
           </Badge>
         </div>
-        <CardDescription className="text-sm leading-relaxed text-black/90">
+        <p className="text-base leading-[1.35] text-black/90 [text-wrap:pretty]">
           {description}
-        </CardDescription>
+        </p>
       </CardHeader>
 
       {onSelect ? (
         <CardFooter className="pt-0">
           <Button
             className="h-11 w-full border-2 border-black font-heading text-sm uppercase tracking-[0.06em]"
+            disabled={disabled}
             onClick={onSelect}
             variant={selected ? 'default' : 'secondary'}
           >
