@@ -3,17 +3,23 @@ import { retry } from '@lifeomic/attempt'
 import { OpenRouter } from '@openrouter/sdk'
 import { Liquid } from 'liquidjs'
 import { internal } from './_generated/api'
-import type { Doc, Id } from './_generated/dataModel'
 import { GamePhase, gamePhase } from './game_phase'
 import {
+
+
   action,
   internalMutation,
   mutation,
-  query,
-  type MutationCtx,
-  type QueryCtx,
+  query
 } from './_generated/server'
-import { GENERATE_FACTION_BRIEF } from './prompts'
+import {
+  GENERATE_FACTION_BRIEF_SYSTEM,
+  GENERATE_FACTION_BRIEF_USER,
+  SCORE_SUBMITTED_ACTION_SYSTEM,
+  SCORE_SUBMITTED_ACTION_USER,
+} from './prompts'
+import type { MutationCtx, QueryCtx } from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel'
 
 const DEFAULT_OPENROUTER_MODEL = 'anthropic/claude-sonnet-4.5'
 const SUBMITTING_DURATION_MS = 60_000
@@ -68,12 +74,18 @@ const participatingFactionStatus = v.object({
   hasBriefing: v.boolean(),
 })
 
+const gradingRubric = v.record(v.string(), v.number())
+
 const submittedActionSummary = v.object({
   id: v.id('submitted_actions'),
   factionId: v.id('factions'),
   actionTypeId: v.string(),
+  actionName: v.string(),
   content: v.string(),
   cost: v.number(),
+  gradingRubric: v.optional(gradingRubric),
+  effectiveness: v.optional(v.number()),
+  impact: v.optional(v.number()),
 })
 
 const planningGenerationStatus = v.union(
@@ -81,6 +93,94 @@ const planningGenerationStatus = v.union(
   v.literal('ready'),
   v.literal('noop'),
 )
+
+const roundProcessingStatus = v.union(
+  v.literal('started'),
+  v.literal('ready'),
+  v.literal('noop'),
+)
+
+const scoringCriterionInput = v.object({
+  name: v.string(),
+  description: v.string(),
+  aiInstructions: v.string(),
+})
+
+const roundProcessingSubmission = v.object({
+  submissionId: v.id('submitted_actions'),
+  factionId: v.id('factions'),
+  factionName: v.string(),
+  factionDescription: v.string(),
+  factionArchetype: v.string(),
+  actionTypeId: v.string(),
+  actionName: v.string(),
+  actionPrompt: v.string(),
+  content: v.string(),
+  cost: v.number(),
+  scoringCriteria: v.array(scoringCriterionInput),
+  isAbstain: v.boolean(),
+})
+
+const scoredSubmission = v.object({
+  gradingRubric: gradingRubric,
+  effectiveness: v.number(),
+  impact: v.number(),
+  reasoning: v.string(),
+})
+
+type SentimentsValue = {
+  stability: number
+  attention: number
+  curiosity: number
+  corporate_blame: number
+  government_blame: number
+}
+
+type RoundProcessingCriterionValue = {
+  name: string
+  description: string
+  aiInstructions: string
+}
+
+type RoundProcessingSubmissionValue = {
+  submissionId: Id<'submitted_actions'>
+  factionId: Id<'factions'>
+  factionName: string
+  factionDescription: string
+  factionArchetype: string
+  actionTypeId: string
+  actionName: string
+  actionPrompt: string
+  content: string
+  cost: number
+  scoringCriteria: Array<RoundProcessingCriterionValue>
+  isAbstain: boolean
+}
+
+type ScoredSubmissionValue = {
+  gradingRubric: Record<string, number>
+  effectiveness: number
+  impact: number
+  reasoning: string
+}
+
+type BeginRoundProcessingResult = {
+  status: 'started' | 'ready' | 'noop'
+  phase: GamePhase
+  roundId?: Id<'rounds'>
+  scenarioTitle?: string
+  roundNumber?: number
+  maxRounds?: number
+  event?: string
+  sentiments?: SentimentsValue
+  submissions?: Array<RoundProcessingSubmissionValue>
+}
+
+type CompleteRoundProcessingResult = {
+  status: 'completed' | 'noop'
+  phase: GamePhase
+  appliedCount: number
+}
 
 export const getMainScreenRoundState = query({
   args: {
@@ -125,6 +225,7 @@ export const getMainScreenRoundState = query({
     const playerCounts = countPlayersByFaction(players)
     const participatingFactionIds = getParticipatingFactionIds(round)
     const participatingSet = new Set(participatingFactionIds)
+    const factionsById = new Map(factions.map((faction) => [faction._id, faction]))
 
     const factionsForView = (round ? factions.filter((faction) => participatingSet.has(faction._id)) : factions)
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -147,17 +248,32 @@ export const getMainScreenRoundState = query({
       round === null
         ? []
         : (await ctx.db
-            .query('submitted_actions')
-            .withIndex('by_round', (q) => q.eq('round_id', round._id))
-            .collect())
-            .sort((a, b) => a._creationTime - b._creationTime)
-            .map((action) => ({
+          .query('submitted_actions')
+          .withIndex('by_round', (q) => q.eq('round_id', round._id))
+          .collect())
+          .sort((a, b) => a._creationTime - b._creationTime)
+          .map((action) => {
+            const faction = factionsById.get(action.faction_id)
+            const actionType =
+              faction && action.action_type_id !== 'abstain'
+                ? findActionType(game, faction, action.action_type_id)
+                : null
+
+            return {
               id: action._id,
               factionId: action.faction_id,
               actionTypeId: action.action_type_id,
+              actionName:
+                action.action_type_id === 'abstain'
+                  ? 'No Submission'
+                  : actionType?.name ?? formatActionTypeLabel(action.action_type_id),
               content: action.content,
               cost: action.cost,
-            }))
+              gradingRubric: action.grading_rubric,
+              effectiveness: action.effectiveness,
+              impact: action.impact,
+            }
+          })
 
     const submittedFactionCount = round
       ? Object.values(round.faction_submitted).filter(Boolean).length
@@ -219,8 +335,12 @@ export const getPlayerRoundState = query({
         v.object({
           id: v.id('submitted_actions'),
           actionTypeId: v.string(),
+          actionName: v.string(),
           cost: v.number(),
           content: v.string(),
+          gradingRubric: v.optional(gradingRubric),
+          effectiveness: v.optional(v.number()),
+          impact: v.optional(v.number()),
         }),
       ),
     }),
@@ -242,7 +362,7 @@ export const getPlayerRoundState = query({
     }
 
     const [faction, factionPlayers, round] = await Promise.all([
-      ctx.db.get(player.faction_id),
+      ctx.db.get("factions", player.faction_id),
       ctx.db
         .query('players')
         .withIndex('by_faction', (q) => q.eq('faction_id', player.faction_id))
@@ -261,11 +381,15 @@ export const getPlayerRoundState = query({
       round === null
         ? undefined
         : await ctx.db
-            .query('submitted_actions')
-            .withIndex('by_round_and_faction', (q) =>
-              q.eq('round_id', round._id).eq('faction_id', faction._id),
-            )
-            .first()
+          .query('submitted_actions')
+          .withIndex('by_round_and_faction', (q) =>
+            q.eq('round_id', round._id).eq('faction_id', faction._id),
+          )
+          .first()
+    const submittedActionType =
+      submittedAction && submittedAction.action_type_id !== 'abstain'
+        ? findActionType(game, faction, submittedAction.action_type_id)
+        : null
 
     return {
       gameId: game.public_id,
@@ -317,11 +441,18 @@ export const getPlayerRoundState = query({
       })),
       submittedAction: submittedAction
         ? {
-            id: submittedAction._id,
-            actionTypeId: submittedAction.action_type_id,
-            cost: submittedAction.cost,
-            content: submittedAction.content,
-          }
+          id: submittedAction._id,
+          actionTypeId: submittedAction.action_type_id,
+          actionName:
+            submittedAction.action_type_id === 'abstain'
+              ? 'No Submission'
+              : submittedActionType?.name ?? formatActionTypeLabel(submittedAction.action_type_id),
+          cost: submittedAction.cost,
+          content: submittedAction.content,
+          gradingRubric: submittedAction.grading_rubric,
+          effectiveness: submittedAction.effectiveness,
+          impact: submittedAction.impact,
+        }
         : undefined,
     }
   },
@@ -405,7 +536,7 @@ export const submitFactionAction = mutation({
       }
     }
 
-    const faction = await ctx.db.get(factionId)
+    const faction = await ctx.db.get("factions", factionId)
 
     if (!faction || faction.game_id !== game._id) {
       throw new ConvexError('Faction not found')
@@ -432,7 +563,7 @@ export const submitFactionAction = mutation({
       cost: actionType.cost,
     })
 
-    await ctx.db.patch(faction._id, {
+    await ctx.db.patch("factions", faction._id, {
       credits: faction.credits - actionType.cost,
     })
 
@@ -441,12 +572,12 @@ export const submitFactionAction = mutation({
       [faction._id]: true,
     }
 
-    await ctx.db.patch(round._id, {
+    await ctx.db.patch("rounds", round._id, {
       faction_submitted: nextFactionSubmitted,
     })
 
     if (areAllParticipatingFactionsSubmitted(nextFactionSubmitted)) {
-      await ctx.db.patch(game._id, {
+      await ctx.db.patch("games", game._id, {
         phase: GamePhase.RoundProcessing,
       })
     }
@@ -534,18 +665,126 @@ export const advanceSubmittingToResolving = mutation({
     }
 
     if (insertedAbstains > 0) {
-      await ctx.db.patch(round._id, {
+      await ctx.db.patch("rounds", round._id, {
         faction_submitted: nextFactionSubmitted,
       })
     }
 
-    await ctx.db.patch(game._id, {
+    await ctx.db.patch("games", game._id, {
       phase: GamePhase.RoundProcessing,
     })
 
     return {
       phase: GamePhase.RoundProcessing,
       insertedAbstains,
+    }
+  },
+})
+
+export const processRoundSubmissions = action({
+  args: {
+    gameId: v.string(),
+  },
+  returns: v.object({
+    status: v.union(v.literal('processed'), v.literal('noop')),
+    phase: gamePhase,
+    processedCount: v.number(),
+    appliedCount: v.number(),
+  }),
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{
+    status: 'processed' | 'noop'
+    phase: GamePhase
+    processedCount: number
+    appliedCount: number
+  }> => {
+    const begin = (await ctx.runMutation(internal.gameplay.beginRoundProcessing as any, {
+      gameId: args.gameId,
+    })) as BeginRoundProcessingResult
+
+    if (begin.status === 'noop') {
+      return {
+        status: 'noop' as const,
+        phase: begin.phase,
+        processedCount: 0,
+        appliedCount: 0,
+      }
+    }
+
+    if (!begin.roundId) {
+      throw new ConvexError('Current round not found for processing')
+    }
+
+    if (begin.status === 'ready') {
+      const complete = (await ctx.runMutation(
+        internal.gameplay.completeRoundProcessingAndEnterResults as any,
+        {
+          gameId: args.gameId,
+          roundId: begin.roundId,
+          scores: {},
+        },
+      )) as CompleteRoundProcessingResult
+
+      return {
+        status: complete.status === 'completed' ? ('processed' as const) : ('noop' as const),
+        phase: complete.phase,
+        processedCount: 0,
+        appliedCount: complete.appliedCount,
+      }
+    }
+
+    const submissions = begin.submissions ?? []
+    const needsModel = submissions.some(
+      (submission) => !submission.isAbstain && submission.scoringCriteria.length > 0,
+    )
+    const openRouterApiKey = getEnvironmentVariable('OPENROUTER_API_KEY')
+
+    if (needsModel && !openRouterApiKey) {
+      throw new ConvexError('OPENROUTER_API_KEY is required for submission scoring')
+    }
+
+    const openRouterModel =
+      getEnvironmentVariable('OPENROUTER_MODEL') || DEFAULT_OPENROUTER_MODEL
+    const liquid = new Liquid()
+    const openRouter = openRouterApiKey ? new OpenRouter({ apiKey: openRouterApiKey }) : null
+    const sentimentsText = formatSentiments(begin.sentiments ?? getDefaultSentiments())
+
+    const scoredEntries = await Promise.all(
+      submissions.map(async (submission: RoundProcessingSubmissionValue) => {
+        const score = await scoreSubmittedRoundAction({
+          submission,
+          scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
+          roundNumber: begin.roundNumber ?? 1,
+          maxRounds: begin.maxRounds ?? 1,
+          event: begin.event ?? '',
+          sentimentsText,
+          liquid,
+          openRouter,
+          openRouterModel,
+        })
+
+        return [submission.submissionId, score] as const
+      }),
+    )
+
+    const scores = Object.fromEntries(scoredEntries) as Record<Id<'submitted_actions'>, ScoredSubmissionValue>
+
+    const complete = (await ctx.runMutation(
+      internal.gameplay.completeRoundProcessingAndEnterResults as any,
+      {
+        gameId: args.gameId,
+        roundId: begin.roundId,
+        scores,
+      },
+    )) as CompleteRoundProcessingResult
+
+    return {
+      status: complete.status === 'completed' ? ('processed' as const) : ('noop' as const),
+      phase: complete.phase,
+      processedCount: submissions.length,
+      appliedCount: complete.appliedCount,
     }
   },
 })
@@ -583,7 +822,7 @@ export const generatePlanningBriefings = action({
 
     for (const faction of begin.factions) {
       const sentimentsText = formatSentiments(begin.sentiments)
-      const prompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF, {
+      const templateVars = {
         scenario_title: begin.scenarioTitle,
         event: begin.event,
         round_number: begin.roundNumber,
@@ -592,9 +831,11 @@ export const generatePlanningBriefings = action({
         faction_name: faction.name,
         faction_description: faction.description,
         faction_archetype: faction.archetype,
-        faction_scoring: summarizeScoring(faction.scoring),
+        faction_scoring: formatScoring(faction.scoring, begin.sentiments),
         team_size: faction.teamSize,
-      })
+      }
+      const systemPrompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF_SYSTEM, templateVars)
+      const userPrompt = await liquid.parseAndRender(GENERATE_FACTION_BRIEF_USER, templateVars)
 
       const aiBrief = await retry(async () => {
         const response = await openRouter.chat.send({
@@ -605,12 +846,11 @@ export const generatePlanningBriefings = action({
             messages: [
               {
                 role: 'system',
-                content:
-                  'You generate faction strategy copy for a game. Always return strict JSON matching the schema.',
+                content: systemPrompt,
               },
               {
                 role: 'user',
-                content: prompt,
+                content: userPrompt,
               },
             ],
             responseFormat: {
@@ -667,6 +907,205 @@ export const generatePlanningBriefings = action({
     return {
       status: 'generated' as const,
       generatedCount: Object.keys(briefs).length,
+    }
+  },
+})
+
+export const beginRoundProcessing = internalMutation({
+  args: {
+    gameId: v.string(),
+  },
+  returns: v.object({
+    status: roundProcessingStatus,
+    phase: gamePhase,
+    roundId: v.optional(v.id('rounds')),
+    scenarioTitle: v.optional(v.string()),
+    roundNumber: v.optional(v.number()),
+    maxRounds: v.optional(v.number()),
+    event: v.optional(v.string()),
+    sentiments: v.optional(sentiments),
+    submissions: v.optional(v.array(roundProcessingSubmission)),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      throw new ConvexError('Game not found')
+    }
+
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundProcessing) {
+      return {
+        status: 'noop' as const,
+        phase,
+      }
+    }
+
+    const round = await getCurrentRound(ctx, game)
+
+    if (!round) {
+      throw new ConvexError('Current round not found for round processing')
+    }
+
+    const [factions, submissions] = await Promise.all([
+      ctx.db
+        .query('factions')
+        .withIndex('by_game', (q) => q.eq('game_id', game._id))
+        .collect(),
+      ctx.db
+        .query('submitted_actions')
+        .withIndex('by_round', (q) => q.eq('round_id', round._id))
+        .collect(),
+    ])
+    const factionsById = new Map(factions.map((faction) => [faction._id, faction]))
+    const sortedSubmissions = submissions.sort((a, b) => a._creationTime - b._creationTime)
+    const allScored = sortedSubmissions.every(
+      (submission) =>
+        submission.grading_rubric !== undefined &&
+        typeof submission.effectiveness === 'number' &&
+        typeof submission.impact === 'number' &&
+        typeof submission.reasoning === 'string' &&
+        submission.reasoning.trim().length > 0,
+    )
+
+    if (allScored) {
+      return {
+        status: 'ready' as const,
+        phase,
+        roundId: round._id,
+        roundNumber: round.number,
+        maxRounds: game.max_rounds,
+        scenarioTitle: game.scenario_title ?? 'Breaking Story',
+        event: round.event_development,
+        sentiments: game.sentiments,
+        submissions: [],
+      }
+    }
+
+    const submissionPayloads = sortedSubmissions.map((submission) => {
+      const faction = factionsById.get(submission.faction_id)
+
+      if (!faction) {
+        throw new ConvexError('Faction not found for submitted action')
+      }
+
+      const actionType =
+        submission.action_type_id === 'abstain'
+          ? null
+          : findActionType(game, faction, submission.action_type_id)
+      const scoringCriteria =
+        actionType?.scoring_criteria.map((criterion) => ({
+          name: criterion.name,
+          description: criterion.description,
+          aiInstructions: criterion.ai_scoring_instructions,
+        })) ?? []
+
+      return {
+        submissionId: submission._id,
+        factionId: faction._id,
+        factionName: faction.name,
+        factionDescription: faction.description,
+        factionArchetype: faction.archetype,
+        actionTypeId: submission.action_type_id,
+        actionName:
+          submission.action_type_id === 'abstain'
+            ? 'No Submission'
+            : actionType?.name ?? formatActionTypeLabel(submission.action_type_id),
+        actionPrompt:
+          submission.action_type_id === 'abstain'
+            ? 'No submission before the deadline.'
+            : actionType?.prompt ?? 'No prompt metadata available.',
+        content: submission.content,
+        cost: submission.cost,
+        scoringCriteria,
+        isAbstain: submission.action_type_id === 'abstain',
+      }
+    })
+
+    return {
+      status: 'started' as const,
+      phase,
+      roundId: round._id,
+      roundNumber: round.number,
+      maxRounds: game.max_rounds,
+      scenarioTitle: game.scenario_title ?? 'Breaking Story',
+      event: round.event_development,
+      sentiments: game.sentiments,
+      submissions: submissionPayloads,
+    }
+  },
+})
+
+export const completeRoundProcessingAndEnterResults = internalMutation({
+  args: {
+    gameId: v.string(),
+    roundId: v.id('rounds'),
+    scores: v.record(v.id('submitted_actions'), scoredSubmission),
+  },
+  returns: v.object({
+    status: v.union(v.literal('completed'), v.literal('noop')),
+    phase: gamePhase,
+    appliedCount: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const game = await findGameByPublicId(ctx, args.gameId)
+
+    if (!game) {
+      throw new ConvexError('Game not found')
+    }
+
+    const phase = game.phase
+
+    if (phase !== GamePhase.RoundProcessing) {
+      return {
+        status: 'noop' as const,
+        phase,
+        appliedCount: 0,
+      }
+    }
+
+    const round = await getCurrentRound(ctx, game)
+
+    if (!round || round._id !== args.roundId) {
+      return {
+        status: 'noop' as const,
+        phase,
+        appliedCount: 0,
+      }
+    }
+
+    const submissions = await ctx.db
+      .query('submitted_actions')
+      .withIndex('by_round', (q) => q.eq('round_id', round._id))
+      .collect()
+
+    let appliedCount = 0
+
+    for (const submission of submissions) {
+      const score = args.scores[submission._id]
+
+      if (!score) {
+        continue
+      }
+
+      await ctx.db.patch("submitted_actions", submission._id, {
+        grading_rubric: score.gradingRubric,
+        effectiveness: score.effectiveness,
+        impact: score.impact,
+        reasoning: score.reasoning,
+      })
+      appliedCount += 1
+    }
+
+    await ctx.db.patch("games", game._id, {
+      phase: GamePhase.RoundResults,
+    })
+
+    return {
+      status: 'completed' as const,
+      phase: GamePhase.RoundResults,
+      appliedCount,
     }
   },
 })
@@ -732,13 +1171,13 @@ export const beginPlanningGeneration = internalMutation({
       const now = Date.now()
       const submittingDeadlineMs = round.submitting_deadline_ms ?? now + SUBMITTING_DURATION_MS
 
-      await ctx.db.patch(round._id, {
+      await ctx.db.patch("rounds", round._id, {
         planning_generated_at_ms: round.planning_generated_at_ms ?? now,
         submitting_started_at_ms: round.submitting_started_at_ms ?? now,
         submitting_deadline_ms: submittingDeadlineMs,
       })
 
-      await ctx.db.patch(game._id, {
+      await ctx.db.patch("games", game._id, {
         phase: GamePhase.RoundVoting,
       })
 
@@ -866,7 +1305,7 @@ export const completePlanningGenerationAndEnterSubmitting = internalMutation({
     const now = Date.now()
     const submittingDeadlineMs = round.submitting_deadline_ms ?? now + SUBMITTING_DURATION_MS
 
-    await ctx.db.patch(round._id, {
+    await ctx.db.patch("rounds", round._id, {
       faction_briefs:
         finalizedBriefs as Record<Id<'factions'>, { goal: string; briefing: string }>,
       planning_generated_at_ms: round.planning_generated_at_ms ?? now,
@@ -874,7 +1313,7 @@ export const completePlanningGenerationAndEnterSubmitting = internalMutation({
       submitting_deadline_ms: submittingDeadlineMs,
     })
 
-    await ctx.db.patch(game._id, {
+    await ctx.db.patch("games", game._id, {
       phase: GamePhase.RoundVoting,
     })
 
@@ -905,6 +1344,11 @@ function findActionType(
   name: string
   cost: number
   prompt: string
+  scoring_criteria: Array<{
+    name: string
+    description: string
+    ai_scoring_instructions: string
+  }>
   is_special: boolean
 } | null {
   const normalizedId = actionTypeId.trim()
@@ -1012,6 +1456,329 @@ function parseFactionBrief(
   }
 }
 
+async function scoreSubmittedRoundAction({
+  submission,
+  scenarioTitle,
+  roundNumber,
+  maxRounds,
+  event,
+  sentimentsText,
+  liquid,
+  openRouter,
+  openRouterModel,
+}: {
+  submission: RoundProcessingSubmissionValue
+  scenarioTitle: string
+  roundNumber: number
+  maxRounds: number
+  event: string
+  sentimentsText: string
+  liquid: Liquid
+  openRouter: OpenRouter | null
+  openRouterModel: string
+}): Promise<ScoredSubmissionValue> {
+  const criterionNames = Array.from(
+    new Set(
+      submission.scoringCriteria
+        .map((criterion) => criterion.name.trim())
+        .filter((criterionName) => criterionName.length > 0),
+    ),
+  )
+
+  if (submission.isAbstain) {
+    return createZeroSubmissionScore(
+      criterionNames,
+      'No submission before deadline; assigned zero score.',
+    )
+  }
+
+  if (criterionNames.length === 0) {
+    return createZeroSubmissionScore(
+      criterionNames,
+      'Action scoring criteria unavailable; assigned zero score.',
+    )
+  }
+
+  if (!openRouter) {
+    return createZeroSubmissionScore(
+      criterionNames,
+      'Scoring service unavailable; assigned zero score.',
+    )
+  }
+
+  const templateVars = {
+    scenario_title: scenarioTitle,
+    round_number: roundNumber,
+    max_rounds: maxRounds,
+    event,
+    sentiments: sentimentsText,
+    faction_name: submission.factionName,
+    faction_description: submission.factionDescription,
+    faction_archetype: submission.factionArchetype,
+    action_name: submission.actionName,
+    action_prompt: submission.actionPrompt,
+    submission_content: submission.content,
+    scoring_criteria: formatScoringCriteriaForPrompt(submission.scoringCriteria),
+  }
+  const systemPrompt = await liquid.parseAndRender(SCORE_SUBMITTED_ACTION_SYSTEM, templateVars)
+  const userPrompt = await liquid.parseAndRender(SCORE_SUBMITTED_ACTION_USER, templateVars)
+
+  try {
+    return await retry(async () => {
+      const response = await openRouter.chat.send({
+        chatGenerationParams: {
+          model: openRouterModel,
+          stream: false,
+          temperature: 0.2,
+          reasoning: {
+            effort: 'medium',
+            summary: 'detailed',
+          },
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: userPrompt,
+            },
+          ],
+          responseFormat: {
+            type: 'json_schema',
+            jsonSchema: {
+              name: 'submission_score',
+              strict: true,
+              schema: buildSubmissionScoreSchema(criterionNames),
+            },
+          },
+        },
+      })
+
+      const parsed = parseSubmissionScore(extractAssistantText(response), criterionNames, submission.cost)
+
+      if (!parsed) {
+        throw new Error('Model did not return a valid submission score payload')
+      }
+
+      return parsed
+    }, {
+      maxAttempts: 3,
+      delay: 500,
+      factor: 2,
+      maxDelay: 2_500,
+    })
+  } catch {
+    return createZeroSubmissionScore(
+      criterionNames,
+      'Scoring failed after retries; assigned zero score.',
+    )
+  }
+}
+
+function parseSubmissionScore(
+  value: string,
+  criterionNames: Array<string>,
+  cost: number,
+): ScoredSubmissionValue | null {
+  try {
+    const parsed = JSON.parse(extractJsonPayload(value)) as unknown
+
+    if (!parsed || typeof parsed !== 'object') {
+      return null
+    }
+
+    const objectValue = parsed as { grading_rubric?: unknown; reasoning?: unknown }
+
+    if (typeof objectValue.reasoning !== 'string') {
+      return null
+    }
+
+    const rubric = normalizeGradingRubric(objectValue.grading_rubric, criterionNames)
+    const effectiveness = calculateEffectiveness(rubric)
+    const impact = roundToSingleDecimal(cost * effectiveness)
+
+    return {
+      gradingRubric: rubric,
+      effectiveness,
+      impact,
+      reasoning: normalizeReasoning(objectValue.reasoning),
+    }
+  } catch {
+    return null
+  }
+}
+
+function normalizeGradingRubric(
+  value: unknown,
+  criterionNames: Array<string>,
+): Record<string, number> {
+  const rubricValue =
+    value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
+  const normalized: Record<string, number> = {}
+
+  for (const criterionName of criterionNames) {
+    const rawScore = rubricValue[criterionName]
+    const numericScore =
+      typeof rawScore === 'number' && Number.isFinite(rawScore) ? rawScore : 0
+
+    normalized[criterionName] = clampCriterionScore(numericScore)
+  }
+
+  return normalized
+}
+
+function calculateEffectiveness(gradingRubric: Record<string, number>): number {
+  const scores = Object.values(gradingRubric)
+
+  if (scores.length === 0) {
+    return 0
+  }
+
+  const total = scores.reduce((sum, score) => sum + score, 0)
+  return roundToSingleDecimal(total / scores.length)
+}
+
+function createZeroSubmissionScore(
+  criterionNames: Array<string>,
+  reason: string,
+): ScoredSubmissionValue {
+  const gradingRubric = Object.fromEntries(
+    criterionNames.map((criterionName) => [criterionName, 0]),
+  ) as Record<string, number>
+
+  return {
+    gradingRubric,
+    effectiveness: 0,
+    impact: 0,
+    reasoning: normalizeReasoning(reason),
+  }
+}
+
+function buildSubmissionScoreSchema(
+  criterionNames: Array<string>,
+): Record<string, unknown> {
+  const rubricProperties = Object.fromEntries(
+    criterionNames.map((criterionName) => [
+      criterionName,
+      {
+        type: 'number',
+        minimum: 0,
+        maximum: 10,
+      },
+    ]),
+  )
+
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['grading_rubric', 'reasoning'],
+    properties: {
+      grading_rubric: {
+        type: 'object',
+        additionalProperties: false,
+        required: criterionNames,
+        properties: rubricProperties,
+      },
+      reasoning: {
+        type: 'string',
+      },
+    },
+  }
+}
+
+function formatScoringCriteriaForPrompt(
+  criteria: Array<{ name: string; description: string; aiInstructions: string }>,
+): string {
+  if (criteria.length === 0) {
+    return '- No criteria provided.'
+  }
+
+  return criteria
+    .map(
+      (criterion, index) =>
+        `${index + 1}. ${criterion.name}\n` +
+        `   - Description: ${criterion.description}\n` +
+        `   - Scoring instruction: ${criterion.aiInstructions}`,
+    )
+    .join('\n')
+}
+
+function clampCriterionScore(value: number): number {
+  if (!Number.isFinite(value)) {
+    return 0
+  }
+
+  if (value < 0) {
+    return 0
+  }
+
+  if (value > 10) {
+    return 10
+  }
+
+  return roundToSingleDecimal(value)
+}
+
+function normalizeReasoning(value: string): string {
+  const trimmed = value.trim().replace(/\s+/g, ' ')
+
+  if (!trimmed) {
+    return 'No reasoning provided by the model.'
+  }
+
+  return trimmed.slice(0, 2_000)
+}
+
+function extractJsonPayload(value: string): string {
+  const trimmed = value.trim()
+
+  if (!trimmed) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    return trimmed
+  }
+
+  const firstBraceIndex = trimmed.indexOf('{')
+  const lastBraceIndex = trimmed.lastIndexOf('}')
+
+  if (firstBraceIndex >= 0 && lastBraceIndex > firstBraceIndex) {
+    return trimmed.slice(firstBraceIndex, lastBraceIndex + 1)
+  }
+
+  return trimmed
+}
+
+function roundToSingleDecimal(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+function formatActionTypeLabel(actionTypeId: string): string {
+  return actionTypeId
+    .split('_')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+}
+
+function getDefaultSentiments(): {
+  stability: number
+  attention: number
+  curiosity: number
+  corporate_blame: number
+  government_blame: number
+} {
+  return {
+    stability: 50,
+    attention: 50,
+    curiosity: 50,
+    corporate_blame: 50,
+    government_blame: 50,
+  }
+}
+
 function extractAssistantText(response: unknown): string {
   if (!response || typeof response !== 'object') {
     return ''
@@ -1058,21 +1825,43 @@ function extractAssistantText(response: unknown): string {
   return textParts.join('\n').trim()
 }
 
-function summarizeScoring(scoring: {
-  stability: Array<number>
-  attention: Array<number>
-  curiosity: Array<number>
-  corporate_blame: Array<number>
-  government_blame: Array<number>
-}): string {
-  return (
-    `stability ${summarizeSentimentPreference(scoring.stability)}; ` +
-    `attention ${summarizeSentimentPreference(scoring.attention)}; ` +
-    `curiosity ${summarizeSentimentPreference(scoring.curiosity)}; ` +
-    `corporate blame ${summarizeSentimentPreference(scoring.corporate_blame)}; ` +
-    `government blame ${summarizeSentimentPreference(scoring.government_blame)}`
-  )
+
+
+
+function formatScoring(
+  scoring: Record<string, number[]>,
+  sentiments: Record<string, number>
+): string {
+  function sentimentToLevel(value: number): string {
+    if (value >= 85) return 'very high'
+    if (value >= 65) return 'high'
+    if (value >= 45) return 'medium'
+    if (value >= 30) return 'low'
+    return 'very low'
+  }
+  function describeScore(score: number): string {
+    if (score >= 4) return 'benefits a lot'
+    if (score >= 0) return 'benefits'
+    if (score >= -3) return 'loses'
+    return 'loses a lot'
+  }
+  const lines: string[] = []
+
+  for (const [axis, values] of Object.entries(scoring)) {
+    const lowLabel = describeScore(values[0]!)
+    const highLabel = describeScore(values[3]!)
+    const current = sentimentToLevel(sentiments[axis]!)
+    const name = axis.replace('_', ' ')
+
+    lines.push(
+      `This faction **${lowLabel}** if ${name} is **low** and **${highLabel}** if ${name} is **high**. **${name.charAt(0).toUpperCase() + name.slice(1)} is currently ${current}.**`
+    )
+  }
+
+  return lines.join('\n')
 }
+
+
 
 function summarizeSentimentPreference(values: Array<number>): string {
   const labels = ['low', 'medium', 'high', 'max']

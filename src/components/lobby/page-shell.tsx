@@ -1,5 +1,5 @@
 import { Children } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 
 const PAGE_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1]
@@ -37,7 +37,6 @@ export function PageShell({
   subtitle?: string
   children: ReactNode
 }) {
-  const reduceMotion = Boolean(useReducedMotion())
   const content = Children.toArray(children)
   const emptyHeader = !eyebrow && !title && !subtitle
   return (
@@ -50,35 +49,37 @@ export function PageShell({
         animate={{ opacity: 1 }}
         className="relative z-10 mx-auto flex w-full max-w-6xl flex-col gap-6"
         initial={{ opacity: 0 }}
-        transition={{ duration: reduceMotion ? 0 : 0.2 }}
+        transition={{ duration: 0.2 }}
       >
-        {!emptyHeader && <motion.header
-          animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-          className="neo-panel neo-grid neo-tilt-left space-y-3 p-6 text-center sm:p-8 sm:text-left"
-          initial={reduceMotion ? undefined : { opacity: 0, y: 12 }}
-          transition={reduceMotion ? undefined : { duration: 0.26, ease: PAGE_EASE }}
-        >
-          {eyebrow ? (
-            <p className="neo-label inline-flex w-fit rounded-full border border-black bg-white px-3 py-1 text-black/92">
-              {eyebrow}
-            </p>
-          ) : null}
+        {!emptyHeader && (
+          <motion.header
+            animate={{ opacity: 1, y: 0 }}
+            className="neo-panel neo-grid neo-tilt-left space-y-3 p-6 text-center sm:p-8 sm:text-left"
+            initial={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.26, ease: PAGE_EASE }}
+          >
+            {eyebrow ? (
+              <p className="neo-label inline-flex w-fit rounded-full border border-black bg-white px-3 py-1 text-black/92">
+                {eyebrow}
+              </p>
+            ) : null}
 
-          {title && <h1 className="neo-display text-4xl leading-[1.06] text-black sm:text-5xl">{title}</h1>}
-          {subtitle ? <p className="max-w-3xl text-base text-black/90 sm:text-lg">{subtitle}</p> : null}
-        </motion.header>}
+            {title && <h1 className="neo-display text-4xl leading-[1.06] text-black sm:text-5xl">{title}</h1>}
+            {subtitle ? <p className="max-w-3xl text-base text-black/90 sm:text-lg">{subtitle}</p> : null}
+          </motion.header>
+        )}
 
         <motion.div
           animate="show"
-          initial="hidden"
-          variants={reduceMotion ? undefined : containerVariants}
           className="flex flex-col gap-5"
+          initial="hidden"
+          variants={containerVariants}
         >
           {content.map((child, index) => (
             <motion.section
               className="flex flex-col gap-5"
               key={index}
-              variants={reduceMotion ? undefined : itemVariants}
+              variants={itemVariants}
             >
               {child}
             </motion.section>

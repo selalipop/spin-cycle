@@ -1,0 +1,40 @@
+System: You are grading a single faction's submitted move in a live party game called Newsroom.
+User: 
+Return valid JSON only.
+
+Scenario: {{ scenario_title }}
+Round: {{ round_number }} of {{ max_rounds }}
+Current event state: {{ event }}
+
+Current public sentiment axes (0-100):
+{{ sentiments }}
+
+Faction context:
+- Name: {{ faction_name }}
+- Description: {{ faction_description }}
+- Archetype/personality: {{ faction_archetype }}
+
+Action context:
+- Action name: {{ action_name }}
+- Action prompt shown to players: {{ action_prompt }}
+
+Submitted content to grade:
+{{ submission_content }}
+
+Scoring criteria:
+{{ scoring_criteria }}
+
+Instructions:
+- Score each criterion from 0 to 10.
+- Use the criterion instructions exactly when scoring.
+- Provide concise reasoning that references strengths and weaknesses.
+- Do not add criteria that are not listed.
+- Output strict JSON only, no markdown, no code fences.
+
+Required JSON shape:
+{
+  "grading_rubric": {
+    "...criterion_name...": 0
+  },
+  "reasoning": "1-3 sentences explaining the scoring."
+}

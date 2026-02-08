@@ -1,8 +1,9 @@
 import { ConvexError, v } from 'convex/values'
-import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server'
-import type { Doc, Id } from './_generated/dataModel'
+import {   mutation, query } from './_generated/server'
 import { GamePhase, gamePhase } from './game_phase'
-import { SHARED_ACTIONS, FACTIONS, SCENARIOS } from './game_data'
+import { FACTIONS, SCENARIOS, SHARED_ACTIONS } from './game_data'
+import type {MutationCtx, QueryCtx} from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel'
 
 const DEFAULT_EVENT =
   'Breaking: A leaked safety memo reveals a fast-moving chemical spill near downtown schools.'
@@ -111,7 +112,7 @@ export const joinGame = mutation({
       throw new ConvexError('This game has already started')
     }
 
-    const faction = await ctx.db.get(args.factionId)
+    const faction = await ctx.db.get("factions", args.factionId)
 
     if (!faction || faction.game_id !== game._id) {
       throw new ConvexError('Invalid faction selection')
@@ -125,7 +126,7 @@ export const joinGame = mutation({
       .unique()
 
     if (existingPlayer) {
-      await ctx.db.patch(existingPlayer._id, {
+      await ctx.db.patch("players", existingPlayer._id, {
         faction_id: faction._id,
         name: playerName,
         avatar,
@@ -339,7 +340,7 @@ export const getPlayerState = query({
     }
 
     const [faction, factionPlayers] = await Promise.all([
-      ctx.db.get(player.faction_id),
+      ctx.db.get("factions", player.faction_id),
       ctx.db
         .query('players')
         .withIndex('by_faction', (q) => q.eq('faction_id', player.faction_id))
@@ -395,7 +396,7 @@ export const startGame = mutation({
       throw new ConvexError('Game has already started')
     }
 
-    await ctx.db.patch(game._id, {
+    await ctx.db.patch("games", game._id, {
       phase: GamePhase.GameIntroduction,
     })
 
@@ -459,7 +460,7 @@ export const startRoundOne = mutation({
       faction_submitted: buildInitialFactionSubmitted(participatingFactionIds),
     })
 
-    await ctx.db.patch(game._id, {
+    await ctx.db.patch("games", game._id, {
       phase: GamePhase.RoundLoading,
       current_round: 1,
     })

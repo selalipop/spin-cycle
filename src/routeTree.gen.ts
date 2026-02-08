@@ -13,6 +13,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JoinJoinCodeRouteImport } from './routes/join/$joinCode'
 import { Route as GameGameIdHostRouteImport } from './routes/game/$gameId/host'
 import { Route as GameGameIdPlayerPlayerIdRouteImport } from './routes/game/$gameId/player/$playerId'
+import { Route as GameGameIdPlayerPlayerIdIndexRouteImport } from './routes/game/$gameId/player/$playerId.index'
+import { Route as GameGameIdPlayerPlayerIdRoundVotingRouteImport } from './routes/game/$gameId/player/$playerId.round-voting'
+import { Route as GameGameIdPlayerPlayerIdRoundResultsRouteImport } from './routes/game/$gameId/player/$playerId.round-results'
+import { Route as GameGameIdPlayerPlayerIdRoundProcessingRouteImport } from './routes/game/$gameId/player/$playerId.round-processing'
+import { Route as GameGameIdPlayerPlayerIdRoundLoadingRouteImport } from './routes/game/$gameId/player/$playerId.round-loading'
+import { Route as GameGameIdPlayerPlayerIdIntroductionRouteImport } from './routes/game/$gameId/player/$playerId.introduction'
+import { Route as GameGameIdPlayerPlayerIdIntermissionRouteImport } from './routes/game/$gameId/player/$playerId.intermission'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,25 +42,87 @@ const GameGameIdPlayerPlayerIdRoute =
     path: '/game/$gameId/player/$playerId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const GameGameIdPlayerPlayerIdIndexRoute =
+  GameGameIdPlayerPlayerIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdRoundVotingRoute =
+  GameGameIdPlayerPlayerIdRoundVotingRouteImport.update({
+    id: '/round-voting',
+    path: '/round-voting',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdRoundResultsRoute =
+  GameGameIdPlayerPlayerIdRoundResultsRouteImport.update({
+    id: '/round-results',
+    path: '/round-results',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdRoundProcessingRoute =
+  GameGameIdPlayerPlayerIdRoundProcessingRouteImport.update({
+    id: '/round-processing',
+    path: '/round-processing',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdRoundLoadingRoute =
+  GameGameIdPlayerPlayerIdRoundLoadingRouteImport.update({
+    id: '/round-loading',
+    path: '/round-loading',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdIntroductionRoute =
+  GameGameIdPlayerPlayerIdIntroductionRouteImport.update({
+    id: '/introduction',
+    path: '/introduction',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
+const GameGameIdPlayerPlayerIdIntermissionRoute =
+  GameGameIdPlayerPlayerIdIntermissionRouteImport.update({
+    id: '/intermission',
+    path: '/intermission',
+    getParentRoute: () => GameGameIdPlayerPlayerIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
-  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRouteWithChildren
+  '/game/$gameId/player/$playerId/intermission': typeof GameGameIdPlayerPlayerIdIntermissionRoute
+  '/game/$gameId/player/$playerId/introduction': typeof GameGameIdPlayerPlayerIdIntroductionRoute
+  '/game/$gameId/player/$playerId/round-loading': typeof GameGameIdPlayerPlayerIdRoundLoadingRoute
+  '/game/$gameId/player/$playerId/round-processing': typeof GameGameIdPlayerPlayerIdRoundProcessingRoute
+  '/game/$gameId/player/$playerId/round-results': typeof GameGameIdPlayerPlayerIdRoundResultsRoute
+  '/game/$gameId/player/$playerId/round-voting': typeof GameGameIdPlayerPlayerIdRoundVotingRoute
+  '/game/$gameId/player/$playerId/': typeof GameGameIdPlayerPlayerIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
-  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
+  '/game/$gameId/player/$playerId/intermission': typeof GameGameIdPlayerPlayerIdIntermissionRoute
+  '/game/$gameId/player/$playerId/introduction': typeof GameGameIdPlayerPlayerIdIntroductionRoute
+  '/game/$gameId/player/$playerId/round-loading': typeof GameGameIdPlayerPlayerIdRoundLoadingRoute
+  '/game/$gameId/player/$playerId/round-processing': typeof GameGameIdPlayerPlayerIdRoundProcessingRoute
+  '/game/$gameId/player/$playerId/round-results': typeof GameGameIdPlayerPlayerIdRoundResultsRoute
+  '/game/$gameId/player/$playerId/round-voting': typeof GameGameIdPlayerPlayerIdRoundVotingRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/join/$joinCode': typeof JoinJoinCodeRoute
   '/game/$gameId/host': typeof GameGameIdHostRoute
-  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRoute
+  '/game/$gameId/player/$playerId': typeof GameGameIdPlayerPlayerIdRouteWithChildren
+  '/game/$gameId/player/$playerId/intermission': typeof GameGameIdPlayerPlayerIdIntermissionRoute
+  '/game/$gameId/player/$playerId/introduction': typeof GameGameIdPlayerPlayerIdIntroductionRoute
+  '/game/$gameId/player/$playerId/round-loading': typeof GameGameIdPlayerPlayerIdRoundLoadingRoute
+  '/game/$gameId/player/$playerId/round-processing': typeof GameGameIdPlayerPlayerIdRoundProcessingRoute
+  '/game/$gameId/player/$playerId/round-results': typeof GameGameIdPlayerPlayerIdRoundResultsRoute
+  '/game/$gameId/player/$playerId/round-voting': typeof GameGameIdPlayerPlayerIdRoundVotingRoute
+  '/game/$gameId/player/$playerId/': typeof GameGameIdPlayerPlayerIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -62,11 +131,24 @@ export interface FileRouteTypes {
     | '/join/$joinCode'
     | '/game/$gameId/host'
     | '/game/$gameId/player/$playerId'
+    | '/game/$gameId/player/$playerId/intermission'
+    | '/game/$gameId/player/$playerId/introduction'
+    | '/game/$gameId/player/$playerId/round-loading'
+    | '/game/$gameId/player/$playerId/round-processing'
+    | '/game/$gameId/player/$playerId/round-results'
+    | '/game/$gameId/player/$playerId/round-voting'
+    | '/game/$gameId/player/$playerId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/join/$joinCode'
     | '/game/$gameId/host'
+    | '/game/$gameId/player/$playerId/intermission'
+    | '/game/$gameId/player/$playerId/introduction'
+    | '/game/$gameId/player/$playerId/round-loading'
+    | '/game/$gameId/player/$playerId/round-processing'
+    | '/game/$gameId/player/$playerId/round-results'
+    | '/game/$gameId/player/$playerId/round-voting'
     | '/game/$gameId/player/$playerId'
   id:
     | '__root__'
@@ -74,13 +156,20 @@ export interface FileRouteTypes {
     | '/join/$joinCode'
     | '/game/$gameId/host'
     | '/game/$gameId/player/$playerId'
+    | '/game/$gameId/player/$playerId/intermission'
+    | '/game/$gameId/player/$playerId/introduction'
+    | '/game/$gameId/player/$playerId/round-loading'
+    | '/game/$gameId/player/$playerId/round-processing'
+    | '/game/$gameId/player/$playerId/round-results'
+    | '/game/$gameId/player/$playerId/round-voting'
+    | '/game/$gameId/player/$playerId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JoinJoinCodeRoute: typeof JoinJoinCodeRoute
   GameGameIdHostRoute: typeof GameGameIdHostRoute
-  GameGameIdPlayerPlayerIdRoute: typeof GameGameIdPlayerPlayerIdRoute
+  GameGameIdPlayerPlayerIdRoute: typeof GameGameIdPlayerPlayerIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -113,14 +202,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GameGameIdPlayerPlayerIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/game/$gameId/player/$playerId/': {
+      id: '/game/$gameId/player/$playerId/'
+      path: '/'
+      fullPath: '/game/$gameId/player/$playerId/'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdIndexRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/round-voting': {
+      id: '/game/$gameId/player/$playerId/round-voting'
+      path: '/round-voting'
+      fullPath: '/game/$gameId/player/$playerId/round-voting'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdRoundVotingRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/round-results': {
+      id: '/game/$gameId/player/$playerId/round-results'
+      path: '/round-results'
+      fullPath: '/game/$gameId/player/$playerId/round-results'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdRoundResultsRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/round-processing': {
+      id: '/game/$gameId/player/$playerId/round-processing'
+      path: '/round-processing'
+      fullPath: '/game/$gameId/player/$playerId/round-processing'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdRoundProcessingRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/round-loading': {
+      id: '/game/$gameId/player/$playerId/round-loading'
+      path: '/round-loading'
+      fullPath: '/game/$gameId/player/$playerId/round-loading'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdRoundLoadingRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/introduction': {
+      id: '/game/$gameId/player/$playerId/introduction'
+      path: '/introduction'
+      fullPath: '/game/$gameId/player/$playerId/introduction'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdIntroductionRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
+    '/game/$gameId/player/$playerId/intermission': {
+      id: '/game/$gameId/player/$playerId/intermission'
+      path: '/intermission'
+      fullPath: '/game/$gameId/player/$playerId/intermission'
+      preLoaderRoute: typeof GameGameIdPlayerPlayerIdIntermissionRouteImport
+      parentRoute: typeof GameGameIdPlayerPlayerIdRoute
+    }
   }
 }
+
+interface GameGameIdPlayerPlayerIdRouteChildren {
+  GameGameIdPlayerPlayerIdIntermissionRoute: typeof GameGameIdPlayerPlayerIdIntermissionRoute
+  GameGameIdPlayerPlayerIdIntroductionRoute: typeof GameGameIdPlayerPlayerIdIntroductionRoute
+  GameGameIdPlayerPlayerIdRoundLoadingRoute: typeof GameGameIdPlayerPlayerIdRoundLoadingRoute
+  GameGameIdPlayerPlayerIdRoundProcessingRoute: typeof GameGameIdPlayerPlayerIdRoundProcessingRoute
+  GameGameIdPlayerPlayerIdRoundResultsRoute: typeof GameGameIdPlayerPlayerIdRoundResultsRoute
+  GameGameIdPlayerPlayerIdRoundVotingRoute: typeof GameGameIdPlayerPlayerIdRoundVotingRoute
+  GameGameIdPlayerPlayerIdIndexRoute: typeof GameGameIdPlayerPlayerIdIndexRoute
+}
+
+const GameGameIdPlayerPlayerIdRouteChildren: GameGameIdPlayerPlayerIdRouteChildren =
+  {
+    GameGameIdPlayerPlayerIdIntermissionRoute:
+      GameGameIdPlayerPlayerIdIntermissionRoute,
+    GameGameIdPlayerPlayerIdIntroductionRoute:
+      GameGameIdPlayerPlayerIdIntroductionRoute,
+    GameGameIdPlayerPlayerIdRoundLoadingRoute:
+      GameGameIdPlayerPlayerIdRoundLoadingRoute,
+    GameGameIdPlayerPlayerIdRoundProcessingRoute:
+      GameGameIdPlayerPlayerIdRoundProcessingRoute,
+    GameGameIdPlayerPlayerIdRoundResultsRoute:
+      GameGameIdPlayerPlayerIdRoundResultsRoute,
+    GameGameIdPlayerPlayerIdRoundVotingRoute:
+      GameGameIdPlayerPlayerIdRoundVotingRoute,
+    GameGameIdPlayerPlayerIdIndexRoute: GameGameIdPlayerPlayerIdIndexRoute,
+  }
+
+const GameGameIdPlayerPlayerIdRouteWithChildren =
+  GameGameIdPlayerPlayerIdRoute._addFileChildren(
+    GameGameIdPlayerPlayerIdRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JoinJoinCodeRoute: JoinJoinCodeRoute,
   GameGameIdHostRoute: GameGameIdHostRoute,
-  GameGameIdPlayerPlayerIdRoute: GameGameIdPlayerPlayerIdRoute,
+  GameGameIdPlayerPlayerIdRoute: GameGameIdPlayerPlayerIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

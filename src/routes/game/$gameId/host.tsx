@@ -28,6 +28,7 @@ function HostWaitingRoom() {
   const startRoundOne = useMutation(api.lobby.startRoundOne)
   const advanceSubmittingToResolving = useMutation(api.gameplay.advanceSubmittingToResolving)
   const generatePlanningBriefings = useAction(api.gameplay.generatePlanningBriefings)
+  const processRoundSubmissions = useAction(api.gameplay.processRoundSubmissions)
 
   const [isStarting, setIsStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,6 +41,7 @@ function HostWaitingRoom() {
 
   const planningTriggerRef = useRef<string | null>(null)
   const timeoutTriggerRef = useRef<Set<string>>(new Set())
+  const processingTriggerRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
     if (!lobby || lobby.phase !== 'game_introduction') {
@@ -127,6 +129,26 @@ function HostWaitingRoom() {
       setError('Could not advance after timeout. Please refresh.')
     })
   }, [advanceSubmittingToResolving, nowMs, roundState])
+
+  useEffect(() => {
+    if (!roundState || roundState.phase !== 'round_processing' || !roundState.roundNumber) {
+      return
+    }
+
+    const processingKey = `${roundState.gameId}:${roundState.roundNumber}`
+
+    if (processingTriggerRef.current.has(processingKey)) {
+      return
+    }
+
+    processingTriggerRef.current.add(processingKey)
+
+    void processRoundSubmissions({
+      gameId: roundState.gameId,
+    }).catch(() => {
+      setError('Could not score submissions. Please refresh.')
+    })
+  }, [processRoundSubmissions, roundState])
 
   const joinUrl = useMemo(() => {
     if (!lobby || typeof window === 'undefined') {
@@ -552,6 +574,87 @@ function HostWaitingRoom() {
           label="Scoring The Spin"
           title="Crunching Results"
         />
+      </PageShell>
+    )
+  }
+
+  if (roundState.phase === 'round_results') {
+    const factionNameById = new Map(roundState.factions.map((faction) => [faction.id, faction.name]))
+
+    return (
+      <PageShell
+        eyebrow="Main Display"
+        subtitle="Scoring is complete. Here is how each faction performed."
+        title={`Round ${roundState.roundNumber ?? 1}: Results`}
+      >
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,380px)_1fr]">
+          <Card className="neo-panel gap-4 py-4">
+            <CardHeader className="gap-3 pb-0">
+              <CardTitle className="font-display text-3xl text-black">Round Snapshot</CardTitle>
+              <CardDescription className="text-black/90">
+                Finalized scores for this round&apos;s submissions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 pb-2">
+              <div className="neo-panel-soft p-4">
+                <p className="neo-label text-black/78">World State</p>
+                <p className="mt-2 text-sm leading-relaxed text-black/92">{roundState.event}</p>
+              </div>
+
+              <Badge className="w-fit rounded-full border border-black bg-emerald-300 px-3 py-1 text-[0.68rem] text-black">
+                {roundState.submittedActions.length} submissions scored
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <SentimentBars sentiments={roundState.sentiments} />
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2">
+          {roundState.submittedActions.map((submission) => (
+            <Card className="neo-panel gap-4 py-4" key={submission.id}>
+              <CardHeader className="gap-2 pb-0">
+                <CardTitle className="font-heading text-xl text-black">
+                  {factionNameById.get(submission.factionId) ?? 'Unknown Faction'}
+                </CardTitle>
+                <CardDescription className="text-black/90">{submission.actionName}</CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-3 pb-2">
+                <div className="neo-panel-soft p-3">
+                  <p className="neo-label text-black/78">Submission</p>
+                  <p className="mt-2 text-sm text-black/92">{submission.content}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="rounded-full border border-black bg-white px-2 py-1 text-[0.64rem] text-black">
+                    Effectiveness: {submission.effectiveness ?? 0}
+                  </Badge>
+                  <Badge className="rounded-full border border-black bg-amber-300 px-2 py-1 text-[0.64rem] text-black">
+                    Impact: {submission.impact ?? 0}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="neo-label text-black/78">Grading Rubric</p>
+                  {submission.gradingRubric && Object.keys(submission.gradingRubric).length > 0 ? (
+                    Object.entries(submission.gradingRubric).map(([criterion, score]) => (
+                      <div
+                        className="neo-panel-soft flex items-center justify-between px-3 py-2"
+                        key={`${submission.id}:${criterion}`}
+                      >
+                        <p className="text-sm text-black/90">{criterion}</p>
+                        <p className="font-mono text-xs text-black">{score}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-black/82">No rubric scores available.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </section>
       </PageShell>
     )
   }

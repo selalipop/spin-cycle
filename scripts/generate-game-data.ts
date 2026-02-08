@@ -41,10 +41,23 @@ const templates = fs.readdirSync(templatesDir)
   .filter(f => f.endsWith('.liquid'))
   .sort()
 
-const entries = templates.map(f => {
+const entries = templates.flatMap(f => {
   const name = f.replace('.liquid', '').toUpperCase()
   const content = fs.readFileSync(path.join(templatesDir, f), 'utf8')
-  return `export const ${name} = ${JSON.stringify(content)}`
+
+  // Split on "System:" and "User:" prefixes
+  const systemMatch = content.match(/^System:\s*(.*)/m)
+  const userIdx = content.search(/^User:\s*/m)
+
+  const systemContent = systemMatch ? systemMatch[1].trim() : ''
+  const userContent = userIdx !== -1
+    ? content.slice(userIdx).replace(/^User:\s*/, '').trimStart()
+    : content
+
+  return [
+    `export const ${name}_SYSTEM = ${JSON.stringify(systemContent)}`,
+    `export const ${name}_USER = ${JSON.stringify(userContent)}`,
+  ]
 })
 
 const promptsOut = `// AUTO-GENERATED from .liquid templates — do not edit by hand.
