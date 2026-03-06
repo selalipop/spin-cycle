@@ -81,12 +81,43 @@ function PlayerRoundResultsPhaseRoute() {
                   <p className="text-base text-black/82">No rubric scores available.</p>
                 )}
               </div>
+
+              <CreditGrantSection grant={playerState.creditGrant} />
             </>
           ) : (
-            <p className="text-base text-black/90">No submission was recorded for your faction this round.</p>
+            <>
+              <p className="text-base text-black/90">No submission was recorded for your faction this round.</p>
+              <CreditGrantSection grant={playerState.creditGrant} />
+            </>
           )}
         </CardContent>
       </Card>
     </PageShell>
+  )
+}
+
+function CreditGrantSection({ grant }: { grant?: { base: number; placement: number; placementLabel?: string; total: number } }) {
+  if (!grant) return null
+
+  return (
+    <div className="neo-panel-soft p-4">
+      <p className="neo-label text-black/78">Credits Earned</p>
+      <div className="mt-2 space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-base text-black/90">Base</span>
+          <span className="font-mono text-sm text-black">+{grant.base}</span>
+        </div>
+        {grant.placement > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-base text-black/90">{grant.placementLabel} Place</span>
+            <span className="font-mono text-sm text-black">+{grant.placement}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between border-t border-black/10 pt-1">
+          <span className="text-base font-bold text-black">Total</span>
+          <span className="font-mono text-sm font-bold text-black">+{grant.total}</span>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -37,6 +37,18 @@ const ROUND_INTRO_VIDEO_RESOLVE_POLL_INTERVAL_MS = 1_200
 const SUBMITTING_DURATION_MS = 120_000
 const MAX_SUBMISSION_CONTENT_LENGTH = 1800
 
+/**
+ * Credit grants awarded to each faction at the end of every round.
+ * - basePerRound: credits every faction receives (including abstainers)
+ * - placementBonuses: indexed by placement (0 = 1st, 1 = 2nd, …)
+ *   Tied factions share the highest applicable bonus.
+ *   Abstain factions get base only.
+ */
+const CREDIT_GRANTS = {
+  basePerRound: 3,
+  placementBonuses: [2, 1],
+}
+
 const sentiments = v.object({
   stability: v.number(),
   attention: v.number(),
@@ -476,6 +488,14 @@ export const getPlayerRoundState = query({
           impact: v.optional(v.number()),
         }),
       ),
+      creditGrant: v.optional(
+        v.object({
+          base: v.number(),
+          placement: v.number(),
+          placementLabel: v.optional(v.string()),
+          total: v.number(),
+        }),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
@@ -587,6 +607,7 @@ export const getPlayerRoundState = query({
           impact: submittedAction.impact,
         }
         : undefined,
+      creditGrant: round?.credit_grants?.[faction._id],
     }
   },
 })
@@ -932,6 +953,7 @@ export const processRoundSubmissions = action({
     }
 
     const winningSubmission = getWinningRoundProcessingSubmission(scoredSubmissions)
+    const creditGrants = computeCreditGrants(scoredSubmissions)
     const outcome = await resolveRoundOutcome({
       scenarioTitle: begin.scenarioTitle ?? 'Breaking Story',
       roundNumber: begin.roundNumber ?? 1,
@@ -978,6 +1000,7 @@ export const processRoundSubmissions = action({
         escalation: outcome.escalation,
         introVideoRequestId,
         introVideoError,
+        creditGrants,
       },
     )) as CompleteRoundProcessingResult
 
@@ -1705,6 +1728,15 @@ export const finalizeRoundProcessingAndEnterResults = internalMutation({
     escalation: v.string(),
     introVideoRequestId: v.optional(v.string()),
     introVideoError: v.optional(v.string()),
+    creditGrants: v.record(
+      v.id('factions'),
+      v.object({
+        base: v.number(),
+        placement: v.number(),
+        placementLabel: v.optional(v.string()),
+        total: v.number(),
+      }),
+    ),
   },
   returns: v.object({
     status: v.union(v.literal('completed'), v.literal('noop')),
@@ -1744,7 +1776,23 @@ export const finalizeRoundProcessingAndEnterResults = internalMutation({
       sentiment_after: args.sentimentAfter,
       narrative: normalizeRoundNarrative(args.narrative),
       escalation: normalizedEscalation,
+      credit_grants: args.creditGrants,
     })
+
+    // Apply credit grants to each faction
+    const factions = await ctx.db
+      .query('factions')
+      .withIndex('by_game', (q) => q.eq('game_id', game._id))
+      .collect()
+
+    for (const faction of factions) {
+      const grant = args.creditGrants[faction._id]
+      if (grant) {
+        await ctx.db.patch("factions", faction._id, {
+          credits: faction.credits + grant.total,
+        })
+      }
+    }
 
     if (round.number < game.max_rounds) {
       const nextRoundNumber = round.number + 1
@@ -2414,6 +2462,85 @@ function getWinningRoundProcessingSubmission(
 
       return String(a.submissionId).localeCompare(String(b.submissionId))
     })[0] as RoundProcessingScoredSubmissionValue
+}
+
+type CreditGrantValue = {
+  base: number
+  placement: number
+  placementLabel?: string
+  total: number
+}
+
+function computeCreditGrants(
+  scoredSubmissions: Array<RoundProcessingScoredSubmissionValue>,
+): Record<string, CreditGrantValue> {
+  const grants: Record<string, CreditGrantValue> = {}
+  const { basePerRound, placementBonuses } = CREDIT_GRANTS
+
+  // Non-abstain factions ranked by impact (descending)
+  const ranked = scoredSubmissions
+    .filter((s) => !s.isAbstain)
+    .sort((a, b) => {
+      if (a.impact !== b.impact) return b.impact - a.impact
+      if (a.createdAtMs !== b.createdAtMs) return a.createdAtMs - b.createdAtMs
+      return String(a.submissionId).localeCompare(String(b.submissionId))
+    })
+
+  // Assign placement bonuses with tie-sharing
+  let placementIndex = 0
+  let i = 0
+
+  while (i < ranked.length) {
+    const tiedImpact = ranked[i].impact
+    const tiedFactionIds: Array<string> = []
+
+    while (i < ranked.length && ranked[i].impact === tiedImpact) {
+      tiedFactionIds.push(ranked[i].factionId as string)
+      i++
+    }
+
+    const bonus =
+      placementIndex < placementBonuses.length
+        ? placementBonuses[placementIndex]
+        : 0
+
+    const placementNum = placementIndex + 1
+    const label =
+      tiedFactionIds.length > 1
+        ? `T-${ordinal(placementNum)}`
+        : ordinal(placementNum)
+
+    for (const factionId of tiedFactionIds) {
+      grants[factionId] = {
+        base: basePerRound,
+        placement: bonus,
+        placementLabel: bonus > 0 ? label : undefined,
+        total: basePerRound + bonus,
+      }
+    }
+
+    placementIndex += tiedFactionIds.length
+  }
+
+  // Abstainers get base credits only
+  for (const sub of scoredSubmissions) {
+    const factionId = sub.factionId as string
+    if (sub.isAbstain && !grants[factionId]) {
+      grants[factionId] = {
+        base: basePerRound,
+        placement: 0,
+        total: basePerRound,
+      }
+    }
+  }
+
+  return grants
+}
+
+function ordinal(n: number): string {
+  const suffixes = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0])
 }
 
 async function resolveRoundOutcome({

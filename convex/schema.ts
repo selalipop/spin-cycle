@@ -297,6 +297,22 @@ export default defineSchema({
     ),
 
     /**
+     * Per-faction credit grants awarded this round. Null until processing completes.
+     * Each faction gets a base grant plus a placement bonus based on impact ranking.
+     */
+    credit_grants: v.optional(
+      v.record(
+        v.id("factions"),
+        v.object({
+          base: v.number(),
+          placement: v.number(),
+          placementLabel: v.optional(v.string()),
+          total: v.number(),
+        }),
+      ),
+    ),
+
+    /**
      * Per-faction briefing and goal for this round.
      * AI-generated based on faction archetype + current game state.
      *
